@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -8,14 +8,27 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/ui/logo';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, setPending] = useState(false);
-  const supabase = createClient();
+  const [isReady, setIsReady] = useState(false);
+  const supabaseRef = useRef<SupabaseClient | null>(null);
+
+  useEffect(() => {
+    // Initialize Supabase client only on client side
+    supabaseRef.current = createClient();
+    setIsReady(true);
+  }, []);
 
   async function handleSubmit(formData: FormData) {
+    if (!supabaseRef.current) {
+      setError('App is still loading. Please try again.');
+      return;
+    }
+
     setPending(true);
     setError(null);
 
@@ -23,7 +36,7 @@ export default function SignupPage() {
     const password = formData.get('password') as string;
     const fullName = formData.get('fullName') as string;
 
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabaseRef.current.auth.signUp({
       email,
       password,
       options: {
@@ -118,7 +131,7 @@ export default function SignupPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={pending}>
+            <Button type="submit" className="w-full" disabled={pending || !isReady}>
               {pending ? 'Creating account...' : 'Create account'}
             </Button>
             <p className="text-sm text-muted-foreground">
