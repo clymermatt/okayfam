@@ -57,9 +57,6 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
       {/* Total amount and budget info */}
       <div className="flex justify-between items-start">
         <div className="text-sm text-muted-foreground space-y-1">
-          {budget > 0 && (
-            <p>{formatMoney(budget)} base budget</p>
-          )}
           {totalIncome > 0 && (
             <p className="text-green-600">
               +{formatMoney(incomeReceived)} received
@@ -113,64 +110,64 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
         </div>
 
         {/* Legend - clickable for spent and spoken-for */}
-        <div className={`grid gap-4 text-center ${monthlySavings > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className={`grid gap-2 sm:gap-4 text-center ${monthlySavings > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
           {/* Spent - clickable */}
           <button
             onClick={() => (spentEvents.length > 0 || hasSpentCategories) && toggleSection('spent')}
-            className={`text-center ${(spentEvents.length > 0 || hasSpentCategories) ? 'cursor-pointer hover:bg-muted/50 rounded-md p-2 -m-2 transition-colors' : ''}`}
+            className={`text-center ${(spentEvents.length > 0 || hasSpentCategories) ? 'cursor-pointer hover:bg-muted/50 rounded-md p-1 sm:p-2 -m-1 sm:-m-2 transition-colors' : ''}`}
             disabled={spentEvents.length === 0 && !hasSpentCategories}
           >
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="text-sm text-muted-foreground">Spent</span>
+            <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Spent</span>
               {(spentEvents.length > 0 || hasSpentCategories) && (
                 expandedSection === 'spent' ? (
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                  <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 )
               )}
             </div>
-            <p className="font-semibold">{formatMoney(spent)}</p>
+            <p className="text-xs sm:text-sm font-semibold">{formatMoney(spent)}</p>
           </button>
 
           {/* Spoken-for - clickable */}
           <button
             onClick={() => (spokenForEvents.length > 0 || hasRemainingCategories) && toggleSection('spokenFor')}
-            className={`text-center ${(spokenForEvents.length > 0 || hasRemainingCategories) ? 'cursor-pointer hover:bg-muted/50 rounded-md p-2 -m-2 transition-colors' : ''}`}
+            className={`text-center ${(spokenForEvents.length > 0 || hasRemainingCategories) ? 'cursor-pointer hover:bg-muted/50 rounded-md p-1 sm:p-2 -m-1 sm:-m-2 transition-colors' : ''}`}
             disabled={spokenForEvents.length === 0 && !hasRemainingCategories}
           >
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <span className="text-sm text-muted-foreground">Spoken-for</span>
+            <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-yellow-500 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Planned</span>
               {(spokenForEvents.length > 0 || hasRemainingCategories) && (
                 expandedSection === 'spokenFor' ? (
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
+                  <ChevronUp className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 ) : (
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                  <ChevronDown className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 )
               )}
             </div>
-            <p className="font-semibold">{formatMoney(spokenFor)}</p>
+            <p className="text-xs sm:text-sm font-semibold">{formatMoney(spokenFor)}</p>
           </button>
 
           {monthlySavings > 0 && (
             <div>
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full bg-blue-500" />
-                <span className="text-sm text-muted-foreground">Savings</span>
+              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-blue-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-muted-foreground">Savings</span>
               </div>
-              <p className="font-semibold">{formatMoney(monthlySavings)}</p>
+              <p className="text-xs sm:text-sm font-semibold">{formatMoney(monthlySavings)}</p>
             </div>
           )}
 
           {/* Unallocated - not clickable */}
           <div>
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-sm text-muted-foreground">Unallocated</span>
+            <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 flex-shrink-0" />
+              <span className="text-xs sm:text-sm text-muted-foreground">Free</span>
             </div>
-            <p className="font-semibold">{formatMoney(unallocated)}</p>
+            <p className="text-xs sm:text-sm font-semibold">{formatMoney(unallocated)}</p>
           </div>
         </div>
 
