@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { signup } from '@/lib/actions/auth';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,15 +13,30 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [pending, setPending] = useState(false);
+  const supabase = createClient();
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
     setError(null);
-    const result = await signup(formData);
-    if (result?.error) {
-      setError(result.error);
+
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const fullName = formData.get('fullName') as string;
+
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+      },
+    });
+
+    if (error) {
+      setError(error.message);
       setPending(false);
-    } else if (result?.success) {
+    } else {
       setSuccess(true);
       setPending(false);
     }

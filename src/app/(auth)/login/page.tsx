@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { login } from '@/lib/actions/auth';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,14 +13,27 @@ import { Logo } from '@/components/ui/logo';
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
     setError(null);
-    const result = await login(formData);
-    if (result?.error) {
-      setError(result.error);
+
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
       setPending(false);
+    } else {
+      router.push('/');
+      router.refresh();
     }
   }
 
