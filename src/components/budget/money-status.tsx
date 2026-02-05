@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { MoneyStatusWithEvents, CategorySpending } from '@/lib/queries';
 import { formatMoney, formatDate } from '@/lib/utils';
-import { TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Event } from '@/lib/supabase/types';
 
 interface MoneyStatusProps {
@@ -69,17 +69,6 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
         </div>
         <span className="text-2xl font-semibold">{formatMoney(totalAvailable)}</span>
       </div>
-
-      {/* Income summary if there is income */}
-      {totalIncome > 0 && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-md text-green-700">
-          <TrendingUp className="h-4 w-4" />
-          <span className="text-sm">
-            Income: {formatMoney(incomeReceived)} received
-            {incomeExpected > 0 && ` + ${formatMoney(incomeExpected)} expected`}
-          </span>
-        </div>
-      )}
 
         {/* Budget bar */}
         <div className="h-6 rounded-full bg-muted overflow-hidden flex">
