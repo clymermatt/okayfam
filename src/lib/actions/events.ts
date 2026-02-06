@@ -528,10 +528,10 @@ export async function unlinkTransactionAndReopen(eventId: string) {
     return { error: 'No family found' };
   }
 
-  // First, unlink any transactions from this event
+  // First, unlink any transactions from this event and mark to skip future auto-matching
   const { error: unlinkError } = await supabase
     .from('bank_transactions')
-    .update({ linked_event_id: null })
+    .update({ linked_event_id: null, skip_auto_match: true })
     .eq('linked_event_id', eventId)
     .eq('family_id', profile.family_id);
 

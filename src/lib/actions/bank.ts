@@ -110,10 +110,10 @@ export async function unlinkTransaction(transactionId: string) {
 
   const linkedEventId = transaction?.linked_event_id;
 
-  // Unlink the transaction
+  // Unlink the transaction and mark to skip future auto-matching
   const { error } = await supabase
     .from('bank_transactions')
-    .update({ linked_event_id: null })
+    .update({ linked_event_id: null, skip_auto_match: true })
     .eq('id', transactionId)
     .eq('family_id', profile.family_id);
 

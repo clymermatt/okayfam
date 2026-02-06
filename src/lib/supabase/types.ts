@@ -161,6 +161,7 @@ export interface BankTransaction {
   linked_event_id: string | null;
   category_id: string | null;  // Links to merchant_categories
   is_hidden: boolean;
+  skip_auto_match: boolean;  // Set to true when user manually unlinks
   created_at: string;
   updated_at: string;
 }

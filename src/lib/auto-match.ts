@@ -55,13 +55,14 @@ export async function autoMatchTransactions(
 ): Promise<MatchResult> {
   const result: MatchResult = { matched: 0, details: [] };
 
-  // Get unlinked transactions
+  // Get unlinked transactions (excluding those marked to skip auto-match)
   const { data: transactions } = await supabase
     .from('bank_transactions')
     .select('*')
     .eq('family_id', familyId)
     .is('linked_event_id', null)
-    .eq('is_hidden', false);
+    .eq('is_hidden', false)
+    .or('skip_auto_match.is.null,skip_auto_match.eq.false');
 
   if (!transactions || transactions.length === 0) {
     return result;
