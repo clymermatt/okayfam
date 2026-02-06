@@ -559,3 +559,31 @@ export async function unlinkTransactionAndReopen(eventId: string) {
   revalidatePath('/budget');
   revalidatePath(`/events/${eventId}`);
 }
+
+export async function reopenEvent(eventId: string) {
+  const supabase = await createClient();
+  const profile = await getProfile();
+
+  if (!profile?.family_id) {
+    return { error: 'No family found' };
+  }
+
+  // Set the event back to upcoming and clear actual_cost
+  const { error } = await supabase
+    .from('events')
+    .update({
+      status: 'upcoming',
+      actual_cost: null,
+    })
+    .eq('id', eventId)
+    .eq('family_id', profile.family_id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/events');
+  revalidatePath('/budget');
+  revalidatePath(`/events/${eventId}`);
+}

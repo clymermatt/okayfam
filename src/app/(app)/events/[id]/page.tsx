@@ -13,6 +13,7 @@ import { CancelEventButton } from '@/components/events/cancel-event-button';
 import { MarkCalendarEventComplete } from '@/components/events/mark-calendar-complete';
 import { EventChecklist } from '@/components/checklist/event-checklist';
 import { UnlinkTransactionButton } from '@/components/events/unlink-transaction-button';
+import { ReopenEventButton } from '@/components/events/reopen-event-button';
 
 const RECURRENCE_LABELS: Record<string, string> = {
   weekly: 'Weekly',
@@ -184,6 +185,13 @@ export default async function EventDetailPage({
           eventId={id}
           transaction={event.linkedTransaction}
         />
+      )}
+
+      {/* Reopen button for completed events without linked transaction */}
+      {isCompleted && !event.linkedTransaction && (
+        <div className="flex gap-3">
+          <ReopenEventButton eventId={id} />
+        </div>
       )}
 
       {/* Checklist */}
