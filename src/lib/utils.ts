@@ -19,7 +19,15 @@ export function parseMoney(dollars: string): number {
 }
 
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+  // Parse date string as local time to avoid timezone shift
+  let d: Date;
+  if (typeof date === "string") {
+    // For date-only strings like "2026-02-01", parse as local date
+    const parts = date.split('T')[0].split('-');
+    d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  } else {
+    d = date;
+  }
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
@@ -28,7 +36,20 @@ export function formatDate(date: Date | string): string {
 }
 
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date;
+  // Parse date string as local time to avoid timezone shift
+  let d: Date;
+  if (typeof date === "string") {
+    if (date.includes('T')) {
+      // Has time component, use as-is
+      d = new Date(date);
+    } else {
+      // Date-only string, parse as local
+      const parts = date.split('-');
+      d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+  } else {
+    d = date;
+  }
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
