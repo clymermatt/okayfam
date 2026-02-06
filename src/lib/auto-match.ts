@@ -12,13 +12,39 @@ interface MatchResult {
 }
 
 /**
+ * Check if a transaction date is in the same month as an event date
+ * Allows a small buffer (3 days) at month boundaries for bills that post slightly early/late
+ */
+function isSameMonth(txDate: Date, eventDate: Date): boolean {
+  const txMonth = txDate.getMonth();
+  const txYear = txDate.getFullYear();
+  const eventMonth = eventDate.getMonth();
+  const eventYear = eventDate.getFullYear();
+
+  // Exact same month
+  if (txMonth === eventMonth && txYear === eventYear) {
+    return true;
+  }
+
+  // Allow 3-day buffer at month boundaries
+  const daysDiff = Math.abs((txDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysDiff <= 3) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Automatically link unlinked transactions to matching events
  *
  * Matching criteria (in priority order):
- * 1. Category rules - merchant contains any keyword from a category → link to category's event
- * 2. Legacy keyword rules - merchant name contains keyword → link to specified event
- * 3. Event title match - merchant name matches event title (or vice versa)
- * 4. Amount + Date - amount within 20%, date within 3 days
+ * 1. Event title match - merchant name matches event title (PRIMARY - name is most important)
+ * 2. Category rules - merchant contains any keyword from a category → link to category's event
+ * 3. Legacy keyword rules - merchant name contains keyword → link to specified event
+ *
+ * ALL matches require the transaction to be in the same month as the event.
+ * Amount matching has been removed to prevent incorrect cross-month links.
  *
  * Note: Category rules allow multiple transactions to link to the same event (intentional for grouping)
  * Other match types enforce 1:1 relationship
@@ -89,83 +115,17 @@ export async function autoMatchTransactions(
     const isEventAvailable = (eventId: string) =>
       !eventsWithLinks.has(eventId) && !linkedThisRun.has(eventId);
 
-    // First, check merchant categories
+    // FIRST PRIORITY: Check if merchant name matches any event title (name matching is most important)
+    // Requires same month
     let matched = false;
-    if (categories && categories.length > 0) {
-      for (const category of categories) {
-        // Check if merchant contains ANY of the category's keywords
-        const keywordMatch = category.keywords.some((keyword: string) =>
-          merchantName.includes(keyword.toLowerCase())
-        );
-
-        if (keywordMatch) {
-          if (category.category_type === 'budget') {
-            // Budget-type: just tag with category, no event link
-            await tagTransactionWithCategory(supabase, transaction.id, category.id);
-            result.matched++;
-            result.details.push({
-              transactionId: transaction.id,
-              eventId: '',
-              transactionName: transaction.name,
-              eventTitle: category.name,
-              matchType: 'category',
-            });
-            matched = true;
-            break;
-          } else if (category.category_type === 'event' && category.event_id) {
-            // Event-type: tag with category AND link to event
-            const targetEvent = eventMap.get(category.event_id);
-            if (targetEvent) {
-              await tagTransactionWithCategory(supabase, transaction.id, category.id);
-              await linkTransactionToEvent(supabase, transaction.id, targetEvent.id, txAmount);
-              result.matched++;
-              result.details.push({
-                transactionId: transaction.id,
-                eventId: targetEvent.id,
-                transactionName: transaction.name,
-                eventTitle: targetEvent.title,
-                matchType: 'category',
-              });
-              matched = true;
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    if (matched) continue;
-
-    // Second, check legacy keyword rules (for backwards compatibility)
-    if (rules && rules.length > 0) {
-      for (const rule of rules) {
-        const keyword = rule.keyword.toLowerCase();
-        if (merchantName.includes(keyword)) {
-          const targetEvent = eventMap.get(rule.event_id);
-          if (targetEvent && isEventAvailable(targetEvent.id)) {
-            await linkTransactionToEvent(supabase, transaction.id, targetEvent.id, txAmount);
-            linkedThisRun.add(targetEvent.id);
-            result.matched++;
-            result.details.push({
-              transactionId: transaction.id,
-              eventId: targetEvent.id,
-              transactionName: transaction.name,
-              eventTitle: targetEvent.title,
-              matchType: 'keyword_rule',
-            });
-            matched = true;
-            break;
-          }
-        }
-      }
-    }
-
-    if (matched) continue;
-
-    // Third, check if merchant name matches any event title (1:1 only)
-    // Also require transaction date to be within a reasonable range of event date
     for (const [eventId, event] of eventMap) {
       if (!isEventAvailable(eventId)) continue;
+      if (event.status !== 'upcoming') continue; // Only match upcoming events
+
+      const eventDate = new Date(event.event_date);
+
+      // Must be same month
+      if (!isSameMonth(txDate, eventDate)) continue;
 
       const eventTitle = event.title.toLowerCase();
       const eventKeywords = extractKeywords(eventTitle);
@@ -176,13 +136,6 @@ export async function autoMatchTransactions(
         hasSignificantKeywordMatch(merchantKeywords, eventKeywords);
 
       if (titleMatch) {
-        // Check date proximity - transaction should be within 15 days before to 7 days after event
-        const eventDate = new Date(event.event_date);
-        const daysDiff = (txDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24);
-
-        // Allow transactions from 15 days before to 7 days after the event date
-        if (daysDiff < -15 || daysDiff > 7) continue;
-
         await linkTransactionToEvent(supabase, transaction.id, event.id, txAmount);
         linkedThisRun.add(event.id);
         result.matched++;
@@ -200,33 +153,83 @@ export async function autoMatchTransactions(
 
     if (matched) continue;
 
-    // Fourth, try amount + date matching (1:1 only)
-    for (const [eventId, event] of eventMap) {
-      if (!isEventAvailable(eventId)) continue;
-      if (event.status !== 'upcoming') continue; // Only match upcoming events
+    // SECOND: Check merchant categories (requires same month for event-type categories)
+    if (categories && categories.length > 0) {
+      for (const category of categories) {
+        // Check if merchant contains ANY of the category's keywords
+        const keywordMatch = category.keywords.some((keyword: string) =>
+          merchantName.includes(keyword.toLowerCase())
+        );
 
-      const eventAmount = event.estimated_cost;
-      const eventDate = new Date(event.event_date);
-
-      const daysDiff = Math.abs((txDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24));
-      if (daysDiff > 3) continue;
-
-      const amountDiff = Math.abs(txAmount - eventAmount);
-      const amountThreshold = Math.max(eventAmount * 0.2, 100);
-      if (amountDiff > amountThreshold) continue;
-
-      await linkTransactionToEvent(supabase, transaction.id, event.id, txAmount);
-      linkedThisRun.add(event.id);
-      result.matched++;
-      result.details.push({
-        transactionId: transaction.id,
-        eventId: event.id,
-        transactionName: transaction.name,
-        eventTitle: event.title,
-        matchType: 'amount_date',
-      });
-      break; // Only match to one event
+        if (keywordMatch) {
+          if (category.category_type === 'budget') {
+            // Budget-type: just tag with category, no event link (no date check needed)
+            await tagTransactionWithCategory(supabase, transaction.id, category.id);
+            result.matched++;
+            result.details.push({
+              transactionId: transaction.id,
+              eventId: '',
+              transactionName: transaction.name,
+              eventTitle: category.name,
+              matchType: 'category',
+            });
+            matched = true;
+            break;
+          } else if (category.category_type === 'event' && category.event_id) {
+            // Event-type: tag with category AND link to event (requires same month)
+            const targetEvent = eventMap.get(category.event_id);
+            if (targetEvent && targetEvent.status === 'upcoming') {
+              const eventDate = new Date(targetEvent.event_date);
+              if (isSameMonth(txDate, eventDate)) {
+                await tagTransactionWithCategory(supabase, transaction.id, category.id);
+                await linkTransactionToEvent(supabase, transaction.id, targetEvent.id, txAmount);
+                result.matched++;
+                result.details.push({
+                  transactionId: transaction.id,
+                  eventId: targetEvent.id,
+                  transactionName: transaction.name,
+                  eventTitle: targetEvent.title,
+                  matchType: 'category',
+                });
+                matched = true;
+                break;
+              }
+            }
+          }
+        }
+      }
     }
+
+    if (matched) continue;
+
+    // THIRD: Check legacy keyword rules (requires same month)
+    if (rules && rules.length > 0) {
+      for (const rule of rules) {
+        const keyword = rule.keyword.toLowerCase();
+        if (merchantName.includes(keyword)) {
+          const targetEvent = eventMap.get(rule.event_id);
+          if (targetEvent && isEventAvailable(targetEvent.id) && targetEvent.status === 'upcoming') {
+            const eventDate = new Date(targetEvent.event_date);
+            if (isSameMonth(txDate, eventDate)) {
+              await linkTransactionToEvent(supabase, transaction.id, targetEvent.id, txAmount);
+              linkedThisRun.add(targetEvent.id);
+              result.matched++;
+              result.details.push({
+                transactionId: transaction.id,
+                eventId: targetEvent.id,
+                transactionName: transaction.name,
+                eventTitle: targetEvent.title,
+                matchType: 'keyword_rule',
+              });
+              matched = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // NOTE: Amount-based matching has been removed to prevent cross-month matching issues
   }
 
   return result;
