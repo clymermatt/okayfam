@@ -163,6 +163,7 @@ export async function autoMatchTransactions(
     if (matched) continue;
 
     // Third, check if merchant name matches any event title (1:1 only)
+    // Also require transaction date to be within a reasonable range of event date
     for (const [eventId, event] of eventMap) {
       if (!isEventAvailable(eventId)) continue;
 
@@ -175,6 +176,13 @@ export async function autoMatchTransactions(
         hasSignificantKeywordMatch(merchantKeywords, eventKeywords);
 
       if (titleMatch) {
+        // Check date proximity - transaction should be within 15 days before to 7 days after event
+        const eventDate = new Date(event.event_date);
+        const daysDiff = (txDate.getTime() - eventDate.getTime()) / (1000 * 60 * 60 * 24);
+
+        // Allow transactions from 15 days before to 7 days after the event date
+        if (daysDiff < -15 || daysDiff > 7) continue;
+
         await linkTransactionToEvent(supabase, transaction.id, event.id, txAmount);
         linkedThisRun.add(event.id);
         result.matched++;
