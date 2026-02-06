@@ -271,10 +271,21 @@ export async function getEvent(id: string) {
     .eq('event_id', id)
     .order('sort_order');
 
+  // Get linked transaction (if any)
+  const { data: linkedTransactions } = await supabase
+    .from('bank_transactions')
+    .select('id, name, merchant_name, date, amount')
+    .eq('linked_event_id', id);
+
+  const linkedTransaction = linkedTransactions && linkedTransactions.length > 0
+    ? linkedTransactions[0]
+    : null;
+
   return {
     ...event,
     participants,
     checklist_items: checklist_items ?? [],
+    linkedTransaction,
   };
 }
 

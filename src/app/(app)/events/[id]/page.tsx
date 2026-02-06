@@ -12,6 +12,7 @@ import { CompleteEventForm } from '@/components/events/complete-event-form';
 import { CancelEventButton } from '@/components/events/cancel-event-button';
 import { MarkCalendarEventComplete } from '@/components/events/mark-calendar-complete';
 import { EventChecklist } from '@/components/checklist/event-checklist';
+import { UnlinkTransactionButton } from '@/components/events/unlink-transaction-button';
 
 const RECURRENCE_LABELS: Record<string, string> = {
   weekly: 'Weekly',
@@ -175,6 +176,14 @@ export default async function EventDetailPage({
       {/* Simple complete button for calendar events */}
       {isUpcoming && isCalendarOnly && (
         <MarkCalendarEventComplete eventId={id} />
+      )}
+
+      {/* Linked transaction info for completed events */}
+      {isCompleted && event.linkedTransaction && (
+        <UnlinkTransactionButton
+          eventId={id}
+          transaction={event.linkedTransaction}
+        />
       )}
 
       {/* Checklist */}

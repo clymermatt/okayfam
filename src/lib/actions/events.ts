@@ -519,3 +519,35 @@ export async function completeCalendarEvent(eventId: string) {
   revalidatePath('/events');
   revalidatePath(`/events/${eventId}`);
 }
+
+export async function unlinkTransactionAndReopen(eventId: string) {
+  const supabase = await createClient();
+
+  // First, unlink any transactions from this event
+  const { error: unlinkError } = await supabase
+    .from('bank_transactions')
+    .update({ linked_event_id: null })
+    .eq('linked_event_id', eventId);
+
+  if (unlinkError) {
+    return { error: unlinkError.message };
+  }
+
+  // Then set the event back to upcoming and clear actual_cost
+  const { error: eventError } = await supabase
+    .from('events')
+    .update({
+      status: 'upcoming',
+      actual_cost: null,
+    })
+    .eq('id', eventId);
+
+  if (eventError) {
+    return { error: eventError.message };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/events');
+  revalidatePath('/transactions');
+  revalidatePath(`/events/${eventId}`);
+}
