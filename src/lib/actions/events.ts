@@ -522,12 +522,18 @@ export async function completeCalendarEvent(eventId: string) {
 
 export async function unlinkTransactionAndReopen(eventId: string) {
   const supabase = await createClient();
+  const profile = await getProfile();
+
+  if (!profile?.family_id) {
+    return { error: 'No family found' };
+  }
 
   // First, unlink any transactions from this event
   const { error: unlinkError } = await supabase
     .from('bank_transactions')
     .update({ linked_event_id: null })
-    .eq('linked_event_id', eventId);
+    .eq('linked_event_id', eventId)
+    .eq('family_id', profile.family_id);
 
   if (unlinkError) {
     return { error: unlinkError.message };
@@ -540,7 +546,8 @@ export async function unlinkTransactionAndReopen(eventId: string) {
       status: 'upcoming',
       actual_cost: null,
     })
-    .eq('id', eventId);
+    .eq('id', eventId)
+    .eq('family_id', profile.family_id);
 
   if (eventError) {
     return { error: eventError.message };
@@ -549,5 +556,6 @@ export async function unlinkTransactionAndReopen(eventId: string) {
   revalidatePath('/');
   revalidatePath('/events');
   revalidatePath('/transactions');
+  revalidatePath('/budget');
   revalidatePath(`/events/${eventId}`);
 }
