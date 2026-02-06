@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { BankTransactionWithCategory, Event } from '@/lib/supabase/types';
+import { BankTransactionWithLinkedEvent, Event } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMoney, formatDate } from '@/lib/utils';
-import { linkTransactionToEvent } from '@/lib/actions/bank';
+import { linkTransactionToEvent, unlinkTransaction } from '@/lib/actions/bank';
 import { useRouter } from 'next/navigation';
-import { X, Calendar, DollarSign, Check } from 'lucide-react';
+import { X, Calendar, DollarSign, Check, Unlink, Link2 } from 'lucide-react';
 
 interface MatchTransactionDialogProps {
-  transaction: BankTransactionWithCategory;
+  transaction: BankTransactionWithLinkedEvent;
   events: Event[];
   onClose: () => void;
 }
@@ -21,8 +21,10 @@ export function MatchTransactionDialog({
   onClose,
 }: MatchTransactionDialogProps) {
   const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const router = useRouter();
+  const isCurrentlyLinked = !!transaction.linked_event;
 
   // Sort events by how close their date is to the transaction date
   // and how close their estimated cost is to the transaction amount
@@ -50,6 +52,13 @@ export function MatchTransactionDialog({
     onClose();
   }
 
+  async function handleUnlink() {
+    setUnlinking(true);
+    await unlinkTransaction(transaction.id);
+    router.refresh();
+    onClose();
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-background rounded-lg max-w-lg w-full max-h-[80vh] flex flex-col">
@@ -73,6 +82,34 @@ export function MatchTransactionDialog({
             </span>
           </div>
         </div>
+
+        {/* Currently linked event */}
+        {isCurrentlyLinked && transaction.linked_event && (
+          <div className="p-4 border-b bg-green-50">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-green-700 font-medium flex items-center gap-1">
+                  <Link2 className="h-4 w-4" />
+                  Currently linked to:
+                </p>
+                <p className="font-medium mt-1">{transaction.linked_event.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {formatDate(transaction.linked_event.event_date)}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUnlink}
+                disabled={unlinking}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <Unlink className="h-4 w-4 mr-1" />
+                {unlinking ? 'Unlinking...' : 'Unlink'}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Events list */}
         <div className="flex-1 overflow-y-auto p-4 space-y-2">

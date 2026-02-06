@@ -1,6 +1,6 @@
 // @ts-nocheck - Supabase types not generated
 import { createClient } from '@/lib/supabase/server';
-import { Event, EventWithTransaction, Family, FamilyMember, ChecklistItem, ChecklistTemplate, MoneyStatus, SavingsGoal, BankConnection, BankAccount, BankTransaction, BankTransactionWithAccount, BankTransactionWithCategory, MerchantRule, MerchantRuleWithEvent, MerchantCategory, MerchantCategoryWithEvent, Profile } from '@/lib/supabase/types';
+import { Event, EventWithTransaction, Family, FamilyMember, ChecklistItem, ChecklistTemplate, MoneyStatus, SavingsGoal, BankConnection, BankAccount, BankTransaction, BankTransactionWithAccount, BankTransactionWithCategory, BankTransactionWithLinkedEvent, MerchantRule, MerchantRuleWithEvent, MerchantCategory, MerchantCategoryWithEvent, Profile } from '@/lib/supabase/types';
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -575,7 +575,7 @@ export async function getUnlinkedTransactions(): Promise<BankTransactionWithAcco
   return getBankTransactions({ unlinkedOnly: true, includeHidden: false });
 }
 
-export async function getMonthTransactions(year: number, month: number): Promise<BankTransactionWithCategory[]> {
+export async function getMonthTransactions(year: number, month: number): Promise<BankTransactionWithLinkedEvent[]> {
   const supabase = await createClient();
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -585,14 +585,15 @@ export async function getMonthTransactions(year: number, month: number): Promise
     .select(`
       *,
       account:bank_accounts(*),
-      merchant_category:merchant_categories(*)
+      merchant_category:merchant_categories(*),
+      linked_event:events(id, title, event_date, status)
     `)
     .gte('date', startDate)
     .lte('date', endDate)
     .eq('is_hidden', false)
     .order('date', { ascending: false });
 
-  return (data ?? []) as BankTransactionWithCategory[];
+  return (data ?? []) as BankTransactionWithLinkedEvent[];
 }
 
 export async function getMatchingTransactions(event: {

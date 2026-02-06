@@ -174,6 +174,19 @@ export interface BankTransactionWithCategory extends BankTransaction {
   merchant_category: MerchantCategory | null;
 }
 
+export interface LinkedEventInfo {
+  id: string;
+  title: string;
+  event_date: string;
+  status: string;
+}
+
+export interface BankTransactionWithLinkedEvent extends BankTransaction {
+  account: BankAccount;
+  merchant_category: MerchantCategory | null;
+  linked_event: LinkedEventInfo | null;
+}
+
 export interface MerchantRule {
   id: string;
   family_id: string;

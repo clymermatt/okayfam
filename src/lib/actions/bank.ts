@@ -92,6 +92,53 @@ export async function linkTransactionToEvent(transactionId: string, eventId: str
   revalidatePath('/');
 }
 
+export async function unlinkTransaction(transactionId: string) {
+  const supabase = await createClient();
+  const profile = await getProfile();
+
+  if (!profile?.family_id) {
+    return { error: 'No family found' };
+  }
+
+  // Get the currently linked event before unlinking
+  const { data: transaction } = await supabase
+    .from('bank_transactions')
+    .select('linked_event_id')
+    .eq('id', transactionId)
+    .eq('family_id', profile.family_id)
+    .single();
+
+  const linkedEventId = transaction?.linked_event_id;
+
+  // Unlink the transaction
+  const { error } = await supabase
+    .from('bank_transactions')
+    .update({ linked_event_id: null })
+    .eq('id', transactionId)
+    .eq('family_id', profile.family_id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  // If was linked to an event, set the event back to upcoming and clear actual_cost
+  if (linkedEventId) {
+    await supabase
+      .from('events')
+      .update({
+        status: 'upcoming',
+        actual_cost: null,
+      })
+      .eq('id', linkedEventId)
+      .eq('family_id', profile.family_id);
+  }
+
+  revalidatePath('/transactions');
+  revalidatePath('/events');
+  revalidatePath('/budget');
+  revalidatePath('/');
+}
+
 export async function hideTransaction(transactionId: string) {
   const supabase = await createClient();
   const profile = await getProfile();

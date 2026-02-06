@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { BankTransactionWithCategory, Event, MerchantCategory } from '@/lib/supabase/types';
+import { BankTransactionWithLinkedEvent, Event, MerchantCategory } from '@/lib/supabase/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import { MerchantCategoryWithEvent } from '@/lib/supabase/types';
 type MainFilterType = 'all' | 'uncategorized' | 'categorized';
 
 interface TransactionListProps {
-  transactions: BankTransactionWithCategory[];
+  transactions: BankTransactionWithLinkedEvent[];
   upcomingEvents: Event[];
   allCategories: MerchantCategoryWithEvent[];
 }
@@ -224,7 +224,7 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
 }
 
 interface TransactionCardProps {
-  transaction: BankTransactionWithCategory;
+  transaction: BankTransactionWithLinkedEvent;
   allCategories: MerchantCategoryWithEvent[];
   onMatch?: () => void;
   onHide?: () => void;
@@ -246,6 +246,7 @@ function TransactionCard({
 
   const isExpense = transaction.amount > 0;
   const isCategorized = !!transaction.category_id;
+  const isLinked = !!transaction.linked_event_id;
   const accountIcon = transaction.account?.type === 'credit' ? CreditCard : Building2;
   const AccountIcon = accountIcon;
 
@@ -360,35 +361,43 @@ function TransactionCard({
               {formatMoney(Math.abs(transaction.amount))}
             </span>
 
-            {!isCategorized && (
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onMatch}
-                  title="Link to event"
-                >
-                  <Link2 className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onCreateEvent}
-                  disabled={isCreatingEvent}
-                  title="Create event from transaction"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onHide}
-                  title="Hide transaction"
-                >
-                  <EyeOff className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+            <div className="flex gap-1">
+              {/* Link icon - always visible, colored based on link status */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onMatch}
+                title={isLinked && transaction.linked_event
+                  ? `Linked to: ${transaction.linked_event.title}`
+                  : 'Link to event'}
+                className={isLinked ? 'text-green-600 hover:text-green-700' : 'text-red-500 hover:text-red-600'}
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+
+              {/* Only show other actions for uncategorized/unlinked transactions */}
+              {!isCategorized && !isLinked && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onCreateEvent}
+                    disabled={isCreatingEvent}
+                    title="Create event from transaction"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onHide}
+                    title="Hide transaction"
+                  >
+                    <EyeOff className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>
