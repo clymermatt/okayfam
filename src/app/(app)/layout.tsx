@@ -4,6 +4,7 @@ import { Calendar, DollarSign, ListTodo, Settings, Home, PiggyBank, CreditCard }
 import { getCurrentUser, getFamily } from '@/lib/queries';
 import { LogoutButton } from '@/components/dashboard/logout-button';
 import { MobileNav } from '@/components/navigation/mobile-nav';
+import { NavLink } from '@/components/navigation/nav-link';
 import { Logo } from '@/components/ui/logo';
 
 export default async function AppLayout({
@@ -73,22 +74,3 @@ export default async function AppLayout({
   );
 }
 
-function NavLink({
-  href,
-  icon,
-  children,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-    >
-      {icon}
-      {children}
-    </Link>
-  );
-}
