@@ -69,7 +69,7 @@ export async function linkTransactionToEvent(transactionId: string, eventId: str
     return { error: error.message };
   }
 
-  // If linking to an event, also update the event's actual_cost
+  // If linking to an event, update the event's status to completed and set actual_cost
   if (eventId) {
     const { data: transaction } = await supabase
       .from('bank_transactions')
@@ -80,7 +80,10 @@ export async function linkTransactionToEvent(transactionId: string, eventId: str
     if (transaction) {
       await supabase
         .from('events')
-        .update({ actual_cost: transaction.amount })
+        .update({
+          status: 'completed',
+          actual_cost: transaction.amount,
+        })
         .eq('id', eventId)
         .eq('family_id', profile.family_id);
     }
