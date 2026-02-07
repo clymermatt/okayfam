@@ -373,7 +373,6 @@ export async function getMoneyStatus(year?: number, month?: number): Promise<Mon
       .select('category_id, amount')
       .gte('date', startDate)
       .lte('date', endDate)
-      .eq('is_hidden', false)
       .not('category_id', 'is', null);
 
     // Sum spending by category
@@ -525,7 +524,6 @@ export async function getBankTransactions(options?: {
   accountId?: string;
   startDate?: string;
   endDate?: string;
-  includeHidden?: boolean;
   unlinkedOnly?: boolean;
   limit?: number;
 }): Promise<BankTransactionWithAccount[]> {
@@ -551,10 +549,6 @@ export async function getBankTransactions(options?: {
     query = query.lte('date', options.endDate);
   }
 
-  if (!options?.includeHidden) {
-    query = query.eq('is_hidden', false);
-  }
-
   if (options?.unlinkedOnly) {
     query = query.is('linked_event_id', null);
   }
@@ -568,14 +562,17 @@ export async function getBankTransactions(options?: {
 }
 
 export async function getRecentTransactions(limit = 10): Promise<BankTransactionWithAccount[]> {
-  return getBankTransactions({ limit, includeHidden: false });
+  return getBankTransactions({ limit });
 }
 
 export async function getUnlinkedTransactions(): Promise<BankTransactionWithAccount[]> {
-  return getBankTransactions({ unlinkedOnly: true, includeHidden: false });
+  return getBankTransactions({ unlinkedOnly: true });
 }
 
-export async function getMonthTransactions(year: number, month: number): Promise<BankTransactionWithLinkedEvent[]> {
+export async function getMonthTransactions(
+  year: number,
+  month: number
+): Promise<BankTransactionWithLinkedEvent[]> {
   const supabase = await createClient();
   const startDate = new Date(year, month - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(year, month, 0).toISOString().split('T')[0];
@@ -590,7 +587,6 @@ export async function getMonthTransactions(year: number, month: number): Promise
     `)
     .gte('date', startDate)
     .lte('date', endDate)
-    .eq('is_hidden', false)
     .order('date', { ascending: false });
 
   return (data ?? []) as BankTransactionWithLinkedEvent[];
@@ -623,7 +619,6 @@ export async function getMatchingTransactions(event: {
     .gte('amount', minAmount)
     .lte('amount', maxAmount)
     .is('linked_event_id', null)
-    .eq('is_hidden', false)
     .order('date', { ascending: false });
 
   return (data ?? []) as BankTransactionWithAccount[];
@@ -687,7 +682,6 @@ export async function getCategoryBudgetStatus(year: number, month: number): Prom
     .select('category_id, amount')
     .gte('date', startDate)
     .lte('date', endDate)
-    .eq('is_hidden', false)
     .not('category_id', 'is', null);
 
   // Sum spending by category
@@ -744,7 +738,6 @@ export async function getMerchantSuggestions(): Promise<MerchantSuggestion[]> {
     .from('bank_transactions')
     .select('name, merchant_name, amount, date')
     .is('linked_event_id', null)
-    .eq('is_hidden', false)
     .order('date', { ascending: false });
 
   if (!transactions || transactions.length === 0) {

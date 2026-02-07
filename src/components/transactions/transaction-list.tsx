@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { formatMoney, formatDate } from '@/lib/utils';
 import {
   Link2,
-  EyeOff,
   Plus,
   CreditCard,
   Building2,
@@ -18,7 +17,7 @@ import {
   Check
 } from 'lucide-react';
 import { MatchTransactionDialog } from './match-transaction-dialog';
-import { hideTransaction, createEventFromTransaction, setTransactionCategory } from '@/lib/actions/bank';
+import { createEventFromTransaction, setTransactionCategory } from '@/lib/actions/bank';
 import { useRouter } from 'next/navigation';
 import { MerchantCategoryWithEvent } from '@/lib/supabase/types';
 
@@ -80,11 +79,6 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
 
     return result;
   }, [transactions, mainFilter, selectedCategories]);
-
-  async function handleHide(transactionId: string) {
-    await hideTransaction(transactionId);
-    router.refresh();
-  }
 
   async function handleCreateEvent(transactionId: string) {
     setCreatingEvent(transactionId);
@@ -189,7 +183,6 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
               transaction={transaction}
               allCategories={allCategories}
               onMatch={() => setMatchingTransaction(transaction)}
-              onHide={() => handleHide(transaction.id)}
               onCreateEvent={() => handleCreateEvent(transaction.id)}
               isCreatingEvent={creatingEvent === transaction.id}
             />
@@ -227,7 +220,6 @@ interface TransactionCardProps {
   transaction: BankTransactionWithLinkedEvent;
   allCategories: MerchantCategoryWithEvent[];
   onMatch?: () => void;
-  onHide?: () => void;
   onCreateEvent?: () => void;
   isCreatingEvent?: boolean;
 }
@@ -236,7 +228,6 @@ function TransactionCard({
   transaction,
   allCategories,
   onMatch,
-  onHide,
   onCreateEvent,
   isCreatingEvent,
 }: TransactionCardProps) {
@@ -375,27 +366,17 @@ function TransactionCard({
                 <Link2 className="h-4 w-4" />
               </Button>
 
-              {/* Only show other actions for uncategorized/unlinked transactions */}
+              {/* Only show create event button for uncategorized/unlinked transactions */}
               {!isCategorized && !isLinked && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onCreateEvent}
-                    disabled={isCreatingEvent}
-                    title="Create event from transaction"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onHide}
-                    title="Hide transaction"
-                  >
-                    <EyeOff className="h-4 w-4" />
-                  </Button>
-                </>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onCreateEvent}
+                  disabled={isCreatingEvent}
+                  title="Create event from transaction"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               )}
             </div>
           </div>

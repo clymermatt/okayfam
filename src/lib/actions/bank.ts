@@ -139,48 +139,6 @@ export async function unlinkTransaction(transactionId: string) {
   revalidatePath('/');
 }
 
-export async function hideTransaction(transactionId: string) {
-  const supabase = await createClient();
-  const profile = await getProfile();
-
-  if (!profile?.family_id) {
-    return { error: 'No family found' };
-  }
-
-  const { error } = await supabase
-    .from('bank_transactions')
-    .update({ is_hidden: true })
-    .eq('id', transactionId)
-    .eq('family_id', profile.family_id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidatePath('/transactions');
-}
-
-export async function unhideTransaction(transactionId: string) {
-  const supabase = await createClient();
-  const profile = await getProfile();
-
-  if (!profile?.family_id) {
-    return { error: 'No family found' };
-  }
-
-  const { error } = await supabase
-    .from('bank_transactions')
-    .update({ is_hidden: false })
-    .eq('id', transactionId)
-    .eq('family_id', profile.family_id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  revalidatePath('/transactions');
-}
-
 export async function setTransactionCategory(transactionId: string, categoryId: string | null) {
   const supabase = await createClient();
   const profile = await getProfile();

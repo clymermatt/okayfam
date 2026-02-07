@@ -26,21 +26,9 @@ export function MatchTransactionDialog({
   const router = useRouter();
   const isCurrentlyLinked = !!transaction.linked_event;
 
-  // Sort events by how close their date is to the transaction date
-  // and how close their estimated cost is to the transaction amount
+  // Sort events by date, soonest first
   const sortedEvents = [...events].sort((a, b) => {
-    const txDate = new Date(transaction.date).getTime();
-    const dateA = Math.abs(new Date(a.event_date).getTime() - txDate);
-    const dateB = Math.abs(new Date(b.event_date).getTime() - txDate);
-
-    const amountA = Math.abs(a.estimated_cost - transaction.amount);
-    const amountB = Math.abs(b.estimated_cost - transaction.amount);
-
-    // Combined score (weighted equally)
-    const scoreA = dateA / (1000 * 60 * 60 * 24) + amountA / 100; // Days + dollars difference
-    const scoreB = dateB / (1000 * 60 * 60 * 24) + amountB / 100;
-
-    return scoreA - scoreB;
+    return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
   });
 
   async function handleLink() {

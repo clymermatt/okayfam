@@ -61,7 +61,6 @@ export async function autoMatchTransactions(
     .select('*')
     .eq('family_id', familyId)
     .is('linked_event_id', null)
-    .eq('is_hidden', false)
     .or('skip_auto_match.is.null,skip_auto_match.eq.false');
 
   if (!transactions || transactions.length === 0) {
