@@ -130,12 +130,15 @@ export async function autoMatchTransactions(
       const eventTitle = event.title.toLowerCase();
       const eventKeywords = extractKeywords(eventTitle);
 
-      const titleMatch =
-        merchantName.includes(eventTitle) ||
-        eventTitle.includes(merchantName) ||
-        hasSignificantKeywordMatch(merchantKeywords, eventKeywords);
+      // For direct string matching, require at least 5 characters to avoid false positives
+      // e.g., "Gas" matching any transaction with "gas" in it
+      const directMatch =
+        (eventTitle.length >= 5 && merchantName.includes(eventTitle)) ||
+        (merchantName.length >= 5 && eventTitle.includes(merchantName));
 
-      if (titleMatch) {
+      const keywordMatch = hasSignificantKeywordMatch(merchantKeywords, eventKeywords);
+
+      if (directMatch || keywordMatch) {
         await linkTransactionToEvent(supabase, transaction.id, event.id, txAmount);
         linkedThisRun.add(event.id);
         result.matched++;
@@ -343,28 +346,22 @@ function extractKeywords(text: string): string[] {
 
 /**
  * Check if two keyword sets have a significant match
- * Returns true if they share at least one meaningful keyword
+ * Returns true if they share at least one meaningful keyword (exact match only)
+ * Keywords must be at least 5 characters to be considered significant
  */
 function hasSignificantKeywordMatch(keywords1: string[], keywords2: string[]): boolean {
   if (keywords1.length === 0 || keywords2.length === 0) {
     return false;
   }
 
-  const set2 = new Set(keywords2);
+  // Only consider keywords with 5+ characters as significant
+  const significantKeywords1 = keywords1.filter(k => k.length >= 5);
+  const significantKeywords2 = new Set(keywords2.filter(k => k.length >= 5));
 
-  for (const keyword of keywords1) {
-    // Direct match
-    if (set2.has(keyword)) {
+  // Require exact match on a significant keyword
+  for (const keyword of significantKeywords1) {
+    if (significantKeywords2.has(keyword)) {
       return true;
-    }
-
-    // Partial match - one keyword contains the other (min 4 chars)
-    if (keyword.length >= 4) {
-      for (const kw2 of keywords2) {
-        if (kw2.length >= 4 && (keyword.includes(kw2) || kw2.includes(keyword))) {
-          return true;
-        }
-      }
     }
   }
 
