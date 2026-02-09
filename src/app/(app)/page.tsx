@@ -17,7 +17,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ filter?: string }>;
 }) {
   const params = await searchParams;
-  const filter = (params.filter as DateFilter) || 'month';
+  const filter = (params.filter as DateFilter) || 'week';
 
   const now = new Date();
   const currentMonthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
