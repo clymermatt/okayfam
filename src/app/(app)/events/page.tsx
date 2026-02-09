@@ -9,11 +9,12 @@ import { MonthNavigator } from '@/components/budget/month-navigator';
 import { EventViewToggle } from '@/components/events/event-view-toggle';
 import { EventStatusFilter } from '@/components/events/event-status-filter';
 import { EventCategoryFilter } from '@/components/events/event-category-filter';
+import { SearchInput } from '@/components/ui/search-input';
 
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; year?: string; month?: string; status?: string; category?: string }>;
+  searchParams: Promise<{ view?: string; year?: string; month?: string; status?: string; category?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const now = new Date();
@@ -21,6 +22,7 @@ export default async function EventsPage({
   const view = params.view || 'all';
   const status = params.status || 'upcoming'; // Default to upcoming events
   const category = params.category || 'all';
+  const search = params.search || '';
   const year = params.year ? parseInt(params.year) : now.getFullYear();
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
 
@@ -41,6 +43,15 @@ export default async function EventsPage({
     events = events.filter(e => !e.linked_category);
   }
 
+  // Filter by search term
+  if (search) {
+    const searchLower = search.toLowerCase();
+    events = events.filter(e =>
+      e.title.toLowerCase().includes(searchLower) ||
+      e.description?.toLowerCase().includes(searchLower)
+    );
+  }
+
   const upcomingEvents = events.filter(e => e.status === 'upcoming');
   const completedEvents = events.filter(e => e.status === 'completed');
   const cancelledEvents = events.filter(e => e.status === 'cancelled');
@@ -58,8 +69,9 @@ export default async function EventsPage({
           </Button>
         </div>
 
-        {/* View toggle, status filter, category filter, and month navigation */}
+        {/* Search and filters */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
+          <SearchInput placeholder="Search events..." />
           <EventViewToggle currentView={view} />
           <EventStatusFilter currentStatus={status} />
           <EventCategoryFilter currentCategory={category} />

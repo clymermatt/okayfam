@@ -14,8 +14,11 @@ import {
   Tag,
   DollarSign,
   Calendar,
-  Check
+  Check,
+  Search,
+  X
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { MatchTransactionDialog } from './match-transaction-dialog';
 import { createEventFromTransaction, setTransactionCategory } from '@/lib/actions/bank';
 import { useRouter } from 'next/navigation';
@@ -34,6 +37,7 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
   const [matchingTransaction, setMatchingTransaction] = useState<BankTransactionWithCategory | null>(null);
   const [creatingEvent, setCreatingEvent] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
   // Get unique categories from transactions
@@ -65,6 +69,15 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
   const filteredTransactions = useMemo(() => {
     let result = transactions;
 
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(t =>
+        t.name.toLowerCase().includes(searchLower) ||
+        t.merchant_name?.toLowerCase().includes(searchLower)
+      );
+    }
+
     // Apply main filter
     if (mainFilter === 'uncategorized') {
       result = result.filter(t => !t.category_id);
@@ -78,7 +91,7 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
     }
 
     return result;
-  }, [transactions, mainFilter, selectedCategories]);
+  }, [transactions, mainFilter, selectedCategories, searchTerm]);
 
   async function handleCreateEvent(transactionId: string) {
     setCreatingEvent(transactionId);
@@ -91,6 +104,28 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
 
   return (
     <div className="space-y-4">
+      {/* Search */}
+      <div className="relative max-w-xs">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Search transactions..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-8 pr-8 h-9"
+        />
+        {searchTerm && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-0 top-0 h-9 w-9 hover:bg-transparent"
+            onClick={() => setSearchTerm('')}
+          >
+            <X className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        )}
+      </div>
+
       {/* Main filter */}
       <div className="flex gap-2 flex-wrap">
         <Button
