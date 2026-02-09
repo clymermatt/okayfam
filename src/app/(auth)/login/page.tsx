@@ -13,10 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setPending(true);
     setError(null);
 
+    const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
@@ -46,7 +48,7 @@ export default function LoginPage() {
             <CardTitle className="text-2xl">Welcome back</CardTitle>
             <CardDescription>Sign in to continue</CardDescription>
           </CardHeader>
-        <form action={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md">
