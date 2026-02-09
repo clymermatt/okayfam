@@ -1,42 +1,27 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/ui/logo';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-  const router = useRouter();
-  const supabaseRef = useRef<SupabaseClient | null>(null);
-
-  useEffect(() => {
-    // Initialize Supabase client only on client side
-    supabaseRef.current = createClient();
-    setIsReady(true);
-  }, []);
 
   async function handleSubmit(formData: FormData) {
-    if (!supabaseRef.current) {
-      setError('App is still loading. Please try again.');
-      return;
-    }
-
     setPending(true);
     setError(null);
 
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await supabaseRef.current.auth.signInWithPassword({
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -45,8 +30,8 @@ export default function LoginPage() {
       setError(error.message);
       setPending(false);
     } else {
-      router.push('/');
-      router.refresh();
+      // Use full page navigation to ensure middleware picks up the new session
+      window.location.href = '/';
     }
   }
 
@@ -90,7 +75,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={pending || !isReady}>
+            <Button type="submit" className="w-full" disabled={pending}>
               {pending ? 'Signing in...' : 'Sign in'}
             </Button>
             <p className="text-sm text-muted-foreground">
