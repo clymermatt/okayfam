@@ -172,7 +172,7 @@ export function MerchantCategories({ categories, events }: MerchantCategoriesPro
           Fixed Expenses (Event Categories)
         </h3>
         <p className="text-xs text-muted-foreground">
-          For recurring bills with set amounts (mortgage, Netflix). Links to a scheduled event.
+          For recurring bills with set amounts (mortgage, Netflix). Tags both events and transactions with matching keywords.
         </p>
 
         {eventCategories.length > 0 ? (
@@ -301,7 +301,7 @@ function CategoryCard({
           <p className="text-sm text-muted-foreground mt-1">
             {isBudget
               ? `Monthly budget: ${formatMoney(category.monthly_budget || 0)}`
-              : `Links to: ${category.event?.title || 'Unknown event'}`}
+              : 'Tags events with matching keywords'}
           </p>
         </div>
         <div className="flex gap-1">
@@ -414,7 +414,7 @@ function CategoryForm({
         </p>
       </div>
 
-      {categoryType === 'budget' ? (
+      {categoryType === 'budget' && (
         <div className="space-y-2">
           <Label htmlFor="budget">Monthly Budget</Label>
           <div className="relative">
@@ -433,25 +433,12 @@ function CategoryForm({
             />
           </div>
         </div>
-      ) : (
-        <div className="space-y-2">
-          <Label htmlFor="event">Link to Event</Label>
-          <select
-            id="event"
-            value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="w-full h-10 px-3 rounded-md border bg-background text-sm"
-          >
-            <option value="">Select a recurring event...</option>
-            {events
-              .filter(e => e.recurrence || e.status === 'upcoming')
-              .map((event) => (
-                <option key={event.id} value={event.id}>
-                  {event.title}
-                </option>
-              ))}
-          </select>
-        </div>
+      )}
+
+      {categoryType === 'event' && (
+        <p className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-md">
+          Events with titles containing your keywords will be automatically tagged with this category.
+        </p>
       )}
 
       <div className="flex gap-2">
@@ -462,8 +449,7 @@ function CategoryForm({
             saving ||
             !name.trim() ||
             !keywordsInput.trim() ||
-            (categoryType === 'budget' && !monthlyBudget) ||
-            (categoryType === 'event' && !eventId)
+            (categoryType === 'budget' && !monthlyBudget)
           }
         >
           {isEdit ? (

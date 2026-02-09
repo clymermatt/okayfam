@@ -95,7 +95,7 @@ export default async function SettingsPage() {
             <p><strong>Two category types:</strong></p>
             <ul className="list-disc list-inside space-y-1 ml-2">
               <li><strong>Budget</strong> — For variable spending (groceries, gas, dining). Set a monthly limit and track against it.</li>
-              <li><strong>Event</strong> — For recurring bills (Netflix, gym). Links transactions to a specific event.</li>
+              <li><strong>Event</strong> — For recurring bills (Netflix, gym). Tags events and transactions with matching keywords.</li>
             </ul>
           </div>
           <MerchantCategories categories={merchantCategories} events={events} />

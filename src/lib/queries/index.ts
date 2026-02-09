@@ -86,11 +86,11 @@ export async function getEventsWithTransactions(status?: 'upcoming' | 'completed
     .select('id, name, merchant_name, date, amount, linked_event_id')
     .in('linked_event_id', eventIds);
 
-  // Get categories that link to these events
+  // Get all event-type categories for keyword matching
   const { data: categories } = await supabase
     .from('merchant_categories')
     .select('*')
-    .in('event_id', eventIds);
+    .eq('category_type', 'event');
 
   // Create a map of event_id -> transaction
   const transactionMap = new Map();
@@ -106,11 +106,18 @@ export async function getEventsWithTransactions(status?: 'upcoming' | 'completed
     }
   }
 
-  // Create a map of event_id -> category
+  // Match events to categories based on keywords in event title
   const categoryMap = new Map();
-  for (const cat of categories || []) {
-    if (cat.event_id) {
-      categoryMap.set(cat.event_id, cat);
+  for (const event of events) {
+    const eventTitle = event.title.toLowerCase();
+    for (const cat of categories || []) {
+      const hasMatch = cat.keywords.some((keyword: string) =>
+        eventTitle.includes(keyword.toLowerCase())
+      );
+      if (hasMatch) {
+        categoryMap.set(event.id, cat);
+        break; // Use first matching category
+      }
     }
   }
 
@@ -146,11 +153,11 @@ export async function getMonthEventsWithTransactions(year: number, month: number
     .select('id, name, merchant_name, date, amount, linked_event_id')
     .in('linked_event_id', eventIds);
 
-  // Get categories that link to these events
+  // Get all event-type categories for keyword matching
   const { data: categories } = await supabase
     .from('merchant_categories')
     .select('*')
-    .in('event_id', eventIds);
+    .eq('category_type', 'event');
 
   // Create a map of event_id -> transaction
   const transactionMap = new Map();
@@ -166,11 +173,18 @@ export async function getMonthEventsWithTransactions(year: number, month: number
     }
   }
 
-  // Create a map of event_id -> category
+  // Match events to categories based on keywords in event title
   const categoryMap = new Map();
-  for (const cat of categories || []) {
-    if (cat.event_id) {
-      categoryMap.set(cat.event_id, cat);
+  for (const event of events) {
+    const eventTitle = event.title.toLowerCase();
+    for (const cat of categories || []) {
+      const hasMatch = cat.keywords.some((keyword: string) =>
+        eventTitle.includes(keyword.toLowerCase())
+      );
+      if (hasMatch) {
+        categoryMap.set(event.id, cat);
+        break; // Use first matching category
+      }
     }
   }
 

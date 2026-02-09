@@ -334,9 +334,6 @@ export async function createMerchantCategory(
   if (categoryType === 'budget' && !monthlyBudget) {
     return { error: 'Monthly budget is required for budget-type categories' };
   }
-  if (categoryType === 'event' && !eventId) {
-    return { error: 'Event is required for event-type categories' };
-  }
 
   const { error } = await supabase
     .from('merchant_categories')
@@ -346,7 +343,7 @@ export async function createMerchantCategory(
       keywords: normalizedKeywords,
       category_type: categoryType,
       monthly_budget: categoryType === 'budget' ? monthlyBudget : null,
-      event_id: categoryType === 'event' ? eventId : null,
+      event_id: null, // No longer linking to specific events
     });
 
   if (error) {
@@ -393,9 +390,6 @@ export async function updateMerchantCategory(
   if (categoryType === 'budget' && !monthlyBudget) {
     return { error: 'Monthly budget is required for budget-type categories' };
   }
-  if (categoryType === 'event' && !eventId) {
-    return { error: 'Event is required for event-type categories' };
-  }
 
   const { error } = await supabase
     .from('merchant_categories')
@@ -404,7 +398,7 @@ export async function updateMerchantCategory(
       keywords: normalizedKeywords,
       category_type: categoryType,
       monthly_budget: categoryType === 'budget' ? monthlyBudget : null,
-      event_id: categoryType === 'event' ? eventId : null,
+      event_id: null, // No longer linking to specific events
       updated_at: new Date().toISOString(),
     })
     .eq('id', categoryId)
