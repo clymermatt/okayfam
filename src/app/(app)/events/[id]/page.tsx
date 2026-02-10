@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Pencil, Trash2, Check, X, Repeat, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
-import { getEvent, getChecklistTemplates, getMatchingTransactions } from '@/lib/queries';
+import { getEvent, getUnlinkedChecklists, getMatchingTransactions } from '@/lib/queries';
 import type { FamilyMember } from '@/lib/supabase/types';
 import { formatDate, formatDateTime, formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -28,9 +28,9 @@ export default async function EventDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [event, templates] = await Promise.all([
+  const [event, unlinkedChecklists] = await Promise.all([
     getEvent(id),
-    getChecklistTemplates(),
+    getUnlinkedChecklists(),
   ]);
 
   if (!event) {
@@ -194,11 +194,11 @@ export default async function EventDetailPage({
         </div>
       )}
 
-      {/* Checklist */}
+      {/* Checklists */}
       <EventChecklist
         eventId={id}
-        items={event.checklist_items}
-        templates={templates}
+        checklists={event.checklists}
+        unlinkedChecklists={unlinkedChecklists}
         readonly={!isUpcoming}
       />
     </div>

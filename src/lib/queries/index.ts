@@ -1,6 +1,6 @@
 // @ts-nocheck - Supabase types not generated
 import { createClient } from '@/lib/supabase/server';
-import { Event, EventWithTransaction, Family, FamilyMember, ChecklistItem, ChecklistTemplate, MoneyStatus, SavingsGoal, BankConnection, BankAccount, BankTransaction, BankTransactionWithAccount, BankTransactionWithCategory, BankTransactionWithLinkedEvent, MerchantRule, MerchantRuleWithEvent, MerchantCategory, MerchantCategoryWithEvent, Profile } from '@/lib/supabase/types';
+import { Event, EventWithTransaction, Family, FamilyMember, ChecklistItem, Checklist, ChecklistWithItems, ChecklistWithItemsAndEvent, MoneyStatus, SavingsGoal, BankConnection, BankAccount, BankTransaction, BankTransactionWithAccount, BankTransactionWithCategory, BankTransactionWithLinkedEvent, MerchantRule, MerchantRuleWithEvent, MerchantCategory, MerchantCategoryWithEvent, Profile } from '@/lib/supabase/types';
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -321,12 +321,8 @@ export async function getEvent(id: string) {
     participants = data ?? [];
   }
 
-  // Get checklist items
-  const { data: checklist_items } = await supabase
-    .from('checklist_items')
-    .select('*')
-    .eq('event_id', id)
-    .order('sort_order');
+  // Get linked checklists with their items
+  const checklists = await getChecklistsForEvent(id);
 
   // Get linked transaction (if any)
   const { data: linkedTransactions } = await supabase
@@ -341,7 +337,7 @@ export async function getEvent(id: string) {
   return {
     ...event,
     participants,
-    checklist_items: checklist_items ?? [],
+    checklists,
     linkedTransaction,
   };
 }
@@ -481,27 +477,99 @@ export async function getMoneyStatus(year?: number, month?: number): Promise<Mon
   };
 }
 
-export async function getChecklistTemplates(): Promise<ChecklistTemplate[]> {
+// ============ Checklist Queries ============
+
+export async function getChecklists(filter?: 'active' | 'complete'): Promise<ChecklistWithItemsAndEvent[]> {
+  const supabase = await createClient();
+
+  let query = supabase
+    .from('checklists')
+    .select(`
+      *,
+      items:checklist_items(*),
+      event:events(*)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (filter === 'active') {
+    query = query.eq('is_completed', false);
+  } else if (filter === 'complete') {
+    query = query.eq('is_completed', true);
+  }
+
+  const { data } = await query;
+
+  // Sort items by sort_order
+  return (data ?? []).map(checklist => ({
+    ...checklist,
+    items: (checklist.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+    event: checklist.event as Event | null,
+  })) as ChecklistWithItemsAndEvent[];
+}
+
+export async function getChecklist(id: string): Promise<ChecklistWithItemsAndEvent | null> {
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from('checklist_templates')
+    .from('checklists')
+    .select(`
+      *,
+      items:checklist_items(*),
+      event:events(*)
+    `)
+    .eq('id', id)
+    .single();
+
+  if (!data) return null;
+
+  return {
+    ...data,
+    items: (data.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+    event: data.event as Event | null,
+  } as ChecklistWithItemsAndEvent;
+}
+
+export async function getChecklistsForEvent(eventId: string): Promise<ChecklistWithItems[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from('checklists')
+    .select(`
+      *,
+      items:checklist_items(*)
+    `)
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false });
+
+  return (data ?? []).map(checklist => ({
+    ...checklist,
+    items: (checklist.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+  })) as ChecklistWithItems[];
+}
+
+export async function getUnlinkedChecklists(): Promise<Checklist[]> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from('checklists')
     .select('*')
+    .is('event_id', null)
+    .eq('is_completed', false)
     .order('name');
 
   return data ?? [];
 }
 
-export async function getChecklistTemplate(id: string): Promise<ChecklistTemplate | null> {
+export async function getEventsForLinking(): Promise<Event[]> {
   const supabase = await createClient();
 
   const { data } = await supabase
-    .from('checklist_templates')
+    .from('events')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('status', 'upcoming')
+    .order('event_date', { ascending: true });
 
-  return data;
+  return data ?? [];
 }
 
 export async function getSavingsGoals(): Promise<SavingsGoal[]> {

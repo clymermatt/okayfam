@@ -36,14 +36,14 @@ export const completeEventSchema = z.object({
   actual_cost: z.number().min(0, 'Cost cannot be negative'),
 });
 
-export const checklistItemSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  event_id: z.string().uuid(),
+export const checklistSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  event_id: z.string().uuid().optional().nullable(),
 });
 
-export const checklistTemplateSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  items: z.array(z.object({ title: z.string().min(1) })),
+export const checklistItemSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  checklist_id: z.string().uuid(),
 });
 
 export const familyMemberSchema = z.object({
@@ -59,7 +59,7 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
 export type EventInput = z.infer<typeof eventSchema>;
 export type CompleteEventInput = z.infer<typeof completeEventSchema>;
+export type ChecklistInput = z.infer<typeof checklistSchema>;
 export type ChecklistItemInput = z.infer<typeof checklistItemSchema>;
-export type ChecklistTemplateInput = z.infer<typeof checklistTemplateSchema>;
 export type FamilyMemberInput = z.infer<typeof familyMemberSchema>;
 export type BudgetInput = z.infer<typeof budgetSchema>;

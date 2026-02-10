@@ -48,7 +48,7 @@ export interface Event {
 
 export interface EventWithParticipants extends Event {
   participants: FamilyMember[];
-  checklist_items: ChecklistItem[];
+  checklists: ChecklistWithItems[];
 }
 
 export interface LinkedTransaction {
@@ -71,9 +71,19 @@ export interface EventParticipant {
   created_at: string;
 }
 
+export interface Checklist {
+  id: string;
+  family_id: string;
+  name: string;
+  event_id: string | null;
+  is_completed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ChecklistItem {
   id: string;
-  event_id: string;
+  checklist_id: string;
   family_id: string;
   title: string;
   is_completed: boolean;
@@ -82,13 +92,16 @@ export interface ChecklistItem {
   updated_at: string;
 }
 
-export interface ChecklistTemplate {
-  id: string;
-  family_id: string;
-  name: string;
-  items: { title: string }[];
-  created_at: string;
-  updated_at: string;
+export interface ChecklistWithItems extends Checklist {
+  items: ChecklistItem[];
+}
+
+export interface ChecklistWithEvent extends Checklist {
+  event: Event | null;
+}
+
+export interface ChecklistWithItemsAndEvent extends ChecklistWithItems {
+  event: Event | null;
 }
 
 export interface BudgetPeriod {
@@ -257,15 +270,15 @@ export interface Database {
         Insert: Omit<EventParticipant, 'id' | 'created_at'>;
         Update: never;
       };
+      checklists: {
+        Row: Checklist;
+        Insert: Omit<Checklist, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Checklist, 'id' | 'family_id' | 'created_at' | 'updated_at'>>;
+      };
       checklist_items: {
         Row: ChecklistItem;
         Insert: Omit<ChecklistItem, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<ChecklistItem, 'id' | 'event_id' | 'family_id' | 'created_at' | 'updated_at'>>;
-      };
-      checklist_templates: {
-        Row: ChecklistTemplate;
-        Insert: Omit<ChecklistTemplate, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<ChecklistTemplate, 'id' | 'family_id' | 'created_at' | 'updated_at'>>;
+        Update: Partial<Omit<ChecklistItem, 'id' | 'checklist_id' | 'family_id' | 'created_at' | 'updated_at'>>;
       };
       budget_periods: {
         Row: BudgetPeriod;

@@ -56,8 +56,8 @@ export default async function AppLayout({
           <NavLink href="/savings" icon={<PiggyBank className="h-4 w-4" />}>
             Savings
           </NavLink>
-          <NavLink href="/templates" icon={<ListTodo className="h-4 w-4" />}>
-            Templates
+          <NavLink href="/checklists" icon={<ListTodo className="h-4 w-4" />}>
+            Checklists
           </NavLink>
           <NavLink href="/settings" icon={<Settings className="h-4 w-4" />}>
             Settings
