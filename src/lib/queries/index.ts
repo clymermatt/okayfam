@@ -499,10 +499,10 @@ export async function getChecklists(filter?: 'active' | 'complete'): Promise<Che
 
   const { data } = await query;
 
-  // Sort items by sort_order
+  // Sort items by sort_order, handle null items
   return (data ?? []).map(checklist => ({
     ...checklist,
-    items: (checklist.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+    items: ((checklist.items as ChecklistItem[]) ?? []).sort((a, b) => a.sort_order - b.sort_order),
     event: checklist.event as Event | null,
   })) as ChecklistWithItemsAndEvent[];
 }
@@ -524,7 +524,7 @@ export async function getChecklist(id: string): Promise<ChecklistWithItemsAndEve
 
   return {
     ...data,
-    items: (data.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+    items: ((data.items as ChecklistItem[]) ?? []).sort((a, b) => a.sort_order - b.sort_order),
     event: data.event as Event | null,
   } as ChecklistWithItemsAndEvent;
 }
@@ -543,7 +543,7 @@ export async function getChecklistsForEvent(eventId: string): Promise<ChecklistW
 
   return (data ?? []).map(checklist => ({
     ...checklist,
-    items: (checklist.items as ChecklistItem[]).sort((a, b) => a.sort_order - b.sort_order),
+    items: ((checklist.items as ChecklistItem[]) ?? []).sort((a, b) => a.sort_order - b.sort_order),
   })) as ChecklistWithItems[];
 }
 
