@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, PiggyBank, ShoppingCart, Landmark } from 'lucide-react';
+import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, PiggyBank, ShoppingCart, Landmark, Tag } from 'lucide-react';
 
 // Force dynamic rendering to ensure fresh data
 export const dynamic = 'force-dynamic';
@@ -227,6 +227,17 @@ export default async function DashboardPage({
                           {formatDate(event.event_date)}
                           {event.event_time && ` at ${event.event_time.slice(0, 5)}`}
                         </p>
+                        {event.linked_category && (
+                          <div className="ml-5 mt-0.5">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-blue-100 text-blue-700 border-blue-200"
+                            >
+                              <Tag className="h-3 w-3 mr-0.5" />
+                              {event.linked_category.name}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                       {!isCalendarEvent && event.estimated_cost > 0 && (
                         <Badge

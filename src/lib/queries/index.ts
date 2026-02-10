@@ -211,43 +211,86 @@ export async function getUpcomingEvents(limit = 5): Promise<Event[]> {
   return data ?? [];
 }
 
-export type DateFilter = 'today' | 'week' | 'month';
+export type DateFilter = 'overdue' | 'today' | 'week' | 'month';
 
-export async function getFilteredEvents(filter: DateFilter): Promise<Event[]> {
+export interface FilteredEvent extends Event {
+  linked_category?: MerchantCategory | null;
+}
+
+export async function getFilteredEvents(filter: DateFilter): Promise<FilteredEvent[]> {
   const supabase = await createClient();
   const now = new Date();
   const today = now.toISOString().split('T')[0];
 
-  let endDate: string;
+  let events: Event[] = [];
 
-  switch (filter) {
-    case 'today':
-      endDate = today;
-      break;
-    case 'week': {
-      const weekEnd = new Date(now);
-      weekEnd.setDate(weekEnd.getDate() + 6); // Next 7 days including today
-      endDate = weekEnd.toISOString().split('T')[0];
-      break;
+  if (filter === 'overdue') {
+    // Get events that are past date but still have 'upcoming' status
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .eq('status', 'upcoming')
+      .lt('event_date', today)
+      .order('event_date', { ascending: true });
+    events = data ?? [];
+  } else {
+    let endDate: string;
+
+    switch (filter) {
+      case 'today':
+        endDate = today;
+        break;
+      case 'week': {
+        const weekEnd = new Date(now);
+        weekEnd.setDate(weekEnd.getDate() + 6); // Next 7 days including today
+        endDate = weekEnd.toISOString().split('T')[0];
+        break;
+      }
+      case 'month':
+      default: {
+        // End of current month
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        endDate = monthEnd.toISOString().split('T')[0];
+        break;
+      }
     }
-    case 'month':
-    default: {
-      // End of current month
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      endDate = monthEnd.toISOString().split('T')[0];
-      break;
+
+    const { data } = await supabase
+      .from('events')
+      .select('*')
+      .eq('status', 'upcoming')
+      .gte('event_date', today)
+      .lte('event_date', endDate)
+      .order('event_date', { ascending: true });
+    events = data ?? [];
+  }
+
+  // Get all event-type categories for keyword matching
+  const { data: categories } = await supabase
+    .from('merchant_categories')
+    .select('*')
+    .eq('category_type', 'event');
+
+  // Match events to categories based on keywords in event title
+  const categoryMap = new Map();
+  for (const event of events) {
+    const eventTitle = event.title.toLowerCase();
+    for (const cat of categories || []) {
+      const hasMatch = cat.keywords.some((keyword: string) =>
+        eventTitle.includes(keyword.toLowerCase())
+      );
+      if (hasMatch) {
+        categoryMap.set(event.id, cat);
+        break;
+      }
     }
   }
 
-  const { data } = await supabase
-    .from('events')
-    .select('*')
-    .eq('status', 'upcoming')
-    .gte('event_date', today)
-    .lte('event_date', endDate)
-    .order('event_date', { ascending: true });
-
-  return data ?? [];
+  // Return events with their categories
+  return events.map(event => ({
+    ...event,
+    linked_category: categoryMap.get(event.id) || null,
+  }));
 }
 
 export async function getEvent(id: string) {

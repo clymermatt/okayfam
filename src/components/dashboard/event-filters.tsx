@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { DateFilter } from '@/lib/queries';
 
 const FILTERS: { value: DateFilter; label: string }[] = [
+  { value: 'overdue', label: 'Overdue' },
   { value: 'today', label: 'Today' },
   { value: 'week', label: 'This Week' },
   { value: 'month', label: 'This Month' },
@@ -12,7 +13,7 @@ const FILTERS: { value: DateFilter; label: string }[] = [
 export function EventFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const currentFilter = (searchParams.get('filter') as DateFilter) || 'month';
+  const currentFilter = (searchParams.get('filter') as DateFilter) || 'week';
 
   function handleFilterChange(filter: DateFilter) {
     const params = new URLSearchParams(searchParams);
