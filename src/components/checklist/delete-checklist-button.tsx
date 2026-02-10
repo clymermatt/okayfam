@@ -28,11 +28,15 @@ export function DeleteChecklistButton({ checklistId, variant = 'ghost' }: Delete
 
   if (confirming) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1" onClick={(e) => e.preventDefault()}>
         <Button
           variant="destructive"
           size="sm"
-          onClick={handleDelete}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleDelete();
+          }}
           disabled={pending}
         >
           {pending ? 'Deleting...' : 'Confirm'}
@@ -40,7 +44,11 @@ export function DeleteChecklistButton({ checklistId, variant = 'ghost' }: Delete
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setConfirming(false)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setConfirming(false);
+          }}
           disabled={pending}
         >
           Cancel
@@ -53,7 +61,11 @@ export function DeleteChecklistButton({ checklistId, variant = 'ghost' }: Delete
     <Button
       variant={variant}
       size="icon"
-      onClick={() => setConfirming(true)}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setConfirming(true);
+      }}
       className="text-muted-foreground hover:text-destructive"
     >
       <Trash2 className="h-4 w-4" />

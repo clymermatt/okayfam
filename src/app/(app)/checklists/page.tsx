@@ -74,9 +74,7 @@ export default async function ChecklistsPage({ searchParams }: PageProps) {
                         </div>
                       )}
                     </div>
-                    <div onClick={(e) => e.preventDefault()}>
-                      <DeleteChecklistButton checklistId={checklist.id} />
-                    </div>
+                    <DeleteChecklistButton checklistId={checklist.id} />
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
