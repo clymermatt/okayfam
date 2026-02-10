@@ -1,20 +1,17 @@
 import Link from 'next/link';
-import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, Receipt, Tag, DollarSign } from 'lucide-react';
-import { getEventsWithTransactions, getMonthEventsWithTransactions } from '@/lib/queries';
+import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, Receipt, Tag } from 'lucide-react';
+import { getEventsWithTransactions, getMonthEventsWithTransactions, getMerchantCategories } from '@/lib/queries';
 import { formatDate, formatMoney } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EventWithTransaction } from '@/lib/supabase/types';
 import { MonthNavigator } from '@/components/budget/month-navigator';
-import { EventViewToggle } from '@/components/events/event-view-toggle';
-import { EventStatusFilter } from '@/components/events/event-status-filter';
-import { EventCategoryFilter } from '@/components/events/event-category-filter';
-import { SearchInput } from '@/components/ui/search-input';
+import { EventListFilters } from '@/components/events/event-list-filters';
 
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; year?: string; month?: string; status?: string; category?: string; search?: string }>;
+  searchParams: Promise<{ view?: string; year?: string; month?: string; status?: string; category?: string; categories?: string; search?: string }>;
 }) {
   const params = await searchParams;
   const now = new Date();
@@ -22,25 +19,41 @@ export default async function EventsPage({
   const view = params.view || 'all';
   const status = params.status || 'upcoming'; // Default to upcoming events
   const category = params.category || 'all';
+  const selectedCategoryIds = params.categories ? params.categories.split(',') : [];
   const search = params.search || '';
   const year = params.year ? parseInt(params.year) : now.getFullYear();
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
 
-  // Fetch events based on view (with linked transaction info)
-  const allEvents = view === 'month'
-    ? await getMonthEventsWithTransactions(year, month)
-    : await getEventsWithTransactions();
+  // Fetch events and categories
+  const [allEvents, allCategories] = await Promise.all([
+    view === 'month'
+      ? getMonthEventsWithTransactions(year, month)
+      : getEventsWithTransactions(),
+    getMerchantCategories(),
+  ]);
 
   // Filter by status if specified
   let events = status === 'all'
     ? allEvents
     : allEvents.filter(e => e.status === status);
 
-  // Filter by category if specified
+  // Count before category filtering for display
+  const totalCount = events.length;
+  const categorizedCount = events.filter(e => e.linked_category).length;
+  const uncategorizedCount = events.filter(e => !e.linked_category).length;
+
+  // Filter by category type (has/no category)
   if (category === 'has-category') {
     events = events.filter(e => e.linked_category);
   } else if (category === 'no-category') {
     events = events.filter(e => !e.linked_category);
+  }
+
+  // Filter by specific category IDs
+  if (selectedCategoryIds.length > 0) {
+    events = events.filter(e =>
+      e.linked_category && selectedCategoryIds.includes(e.linked_category.id)
+    );
   }
 
   // Filter by search term
@@ -69,16 +82,21 @@ export default async function EventsPage({
           </Button>
         </div>
 
-        {/* Search and filters */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-wrap">
-          <SearchInput placeholder="Search events..." />
-          <EventViewToggle currentView={view} />
-          <EventStatusFilter currentStatus={status} />
-          <EventCategoryFilter currentCategory={category} />
-          {view === 'month' && (
-            <MonthNavigator year={year} month={month} basePath="/events" />
-          )}
-        </div>
+        {/* Filters */}
+        <EventListFilters
+          totalCount={totalCount}
+          categorizedCount={categorizedCount}
+          uncategorizedCount={uncategorizedCount}
+          categories={allCategories}
+          currentView={view}
+          currentStatus={status}
+          currentCategory={category}
+          currentSearch={search}
+          selectedCategoryIds={selectedCategoryIds}
+        />
+        {view === 'month' && (
+          <MonthNavigator year={year} month={month} basePath="/events" />
+        )}
       </div>
 
       {events.length === 0 ? (
