@@ -276,6 +276,21 @@ function TransactionCard({
   const accountIcon = transaction.account?.type === 'credit' ? CreditCard : Building2;
   const AccountIcon = accountIcon;
 
+  // Find matching category for linked event (by keyword matching on event title)
+  const linkedEventCategory = useMemo(() => {
+    if (!transaction.linked_event) return null;
+    const eventTitle = transaction.linked_event.title.toLowerCase();
+    for (const cat of allCategories) {
+      if (cat.keywords?.some((keyword: string) => eventTitle.includes(keyword.toLowerCase()))) {
+        return cat;
+      }
+    }
+    return null;
+  }, [transaction.linked_event, allCategories]);
+
+  // Use linked event's category if transaction doesn't have its own
+  const displayCategory = transaction.merchant_category || linkedEventCategory;
+
   async function handleCategoryChange(categoryId: string) {
     setIsSaving(true);
     await setTransactionCategory(
@@ -318,7 +333,7 @@ function TransactionCard({
               </div>
 
               {/* Category section */}
-              <div className="flex gap-1 mt-1 items-center">
+              <div className="flex gap-1 mt-1 items-center flex-wrap">
                 {isEditingCategory ? (
                   <div className="flex items-center gap-2">
                     <select
@@ -342,26 +357,26 @@ function TransactionCard({
                       Cancel
                     </button>
                   </div>
-                ) : transaction.merchant_category ? (
+                ) : displayCategory ? (
                   <button
                     onClick={() => setIsEditingCategory(true)}
                     className="group flex items-center gap-1"
                     title="Click to change category"
                   >
                     <Badge
-                      variant={transaction.merchant_category.category_type === 'budget' ? 'secondary' : 'outline'}
+                      variant={displayCategory.category_type === 'budget' ? 'secondary' : 'outline'}
                       className={`text-xs cursor-pointer group-hover:ring-2 ring-offset-1 ${
-                        transaction.merchant_category.category_type === 'budget'
+                        displayCategory.category_type === 'budget'
                           ? 'bg-green-100 text-green-700 border-green-200 ring-green-300'
                           : 'bg-blue-100 text-blue-700 border-blue-200 ring-blue-300'
                       }`}
                     >
-                      {transaction.merchant_category.category_type === 'budget' ? (
+                      {displayCategory.category_type === 'budget' ? (
                         <DollarSign className="h-3 w-3 mr-0.5" />
                       ) : (
                         <Calendar className="h-3 w-3 mr-0.5" />
                       )}
-                      {transaction.merchant_category.name}
+                      {displayCategory.name}
                     </Badge>
                   </button>
                 ) : (
@@ -372,6 +387,14 @@ function TransactionCard({
                     <Tag className="h-3 w-3" />
                     Add category
                   </button>
+                )}
+
+                {/* Show linked event name */}
+                {isLinked && transaction.linked_event && (
+                  <span className="flex items-center gap-1 text-xs text-green-600">
+                    <Link2 className="h-3 w-3" />
+                    {transaction.linked_event.title}
+                  </span>
                 )}
               </div>
             </div>
