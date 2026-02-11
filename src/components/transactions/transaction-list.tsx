@@ -324,8 +324,12 @@ function TransactionCard({
     setIsEditingCategory(false);
   }
 
+  // Disable link if transaction has a budget (Variable Spending) category
+  const hasBudgetCategory = transaction.merchant_category?.category_type === 'budget';
+  const canLink = !hasBudgetCategory;
+
   return (
-    <Card className={isCategorized ? 'border-green-200 bg-green-50/30' : ''}>
+    <Card>
       <CardContent className="py-3 px-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -433,15 +437,26 @@ function TransactionCard({
             </span>
 
             <div className="flex gap-1">
-              {/* Link icon - always visible, colored based on link status */}
+              {/* Link icon - disabled for budget categories, colored based on link status */}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={onMatch}
-                title={isLinked && transaction.linked_event
-                  ? `Linked to: ${transaction.linked_event.title}`
-                  : 'Link to event'}
-                className={isLinked ? 'text-green-600 hover:text-green-700' : 'text-red-500 hover:text-red-600'}
+                onClick={canLink ? onMatch : undefined}
+                disabled={!canLink}
+                title={
+                  !canLink
+                    ? 'Cannot link - has Variable Spending category'
+                    : isLinked && transaction.linked_event
+                    ? `Linked to: ${transaction.linked_event.title}`
+                    : 'Link to event'
+                }
+                className={
+                  !canLink
+                    ? 'text-muted-foreground/40 cursor-not-allowed'
+                    : isLinked
+                    ? 'text-green-600 hover:text-green-700'
+                    : 'text-red-500 hover:text-red-600'
+                }
               >
                 <Link2 className="h-4 w-4" />
               </Button>
