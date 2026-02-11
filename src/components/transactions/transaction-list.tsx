@@ -40,19 +40,38 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
 
-  // Get unique categories from transactions
+  // Helper to find matching category for a linked event
+  const getLinkedEventCategory = (tx: BankTransactionWithLinkedEvent): MerchantCategory | null => {
+    if (!tx.linked_event) return null;
+    const eventTitle = tx.linked_event.title.toLowerCase();
+    for (const cat of allCategories) {
+      if (cat.keywords?.some((keyword: string) => eventTitle.includes(keyword.toLowerCase()))) {
+        return cat;
+      }
+    }
+    return null;
+  };
+
+  // Get effective category (direct or from linked event)
+  const getEffectiveCategory = (tx: BankTransactionWithLinkedEvent): MerchantCategory | null => {
+    return tx.merchant_category || getLinkedEventCategory(tx);
+  };
+
+  // Get unique categories from transactions (including event-matched categories)
   const categories = useMemo(() => {
     const categoryMap = new Map<string, MerchantCategory>();
     for (const tx of transactions) {
-      if (tx.merchant_category) {
-        categoryMap.set(tx.merchant_category.id, tx.merchant_category);
+      const effectiveCat = getEffectiveCategory(tx);
+      if (effectiveCat) {
+        categoryMap.set(effectiveCat.id, effectiveCat);
       }
     }
     return Array.from(categoryMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-  }, [transactions]);
+  }, [transactions, allCategories]);
 
-  const uncategorizedTransactions = transactions.filter(t => !t.category_id);
-  const categorizedTransactions = transactions.filter(t => t.category_id);
+  // Count transactions with any category (direct or event-matched)
+  const uncategorizedTransactions = transactions.filter(t => !getEffectiveCategory(t));
+  const categorizedTransactions = transactions.filter(t => !!getEffectiveCategory(t));
 
   // Toggle category selection
   function toggleCategory(categoryId: string) {
@@ -78,20 +97,23 @@ export function TransactionList({ transactions, upcomingEvents, allCategories }:
       );
     }
 
-    // Apply main filter
+    // Apply main filter (using effective category which includes event-matched)
     if (mainFilter === 'uncategorized') {
-      result = result.filter(t => !t.category_id);
+      result = result.filter(t => !getEffectiveCategory(t));
     } else if (mainFilter === 'categorized') {
-      result = result.filter(t => t.category_id);
+      result = result.filter(t => !!getEffectiveCategory(t));
     }
 
-    // Apply category selection (only when categories are selected)
+    // Apply category selection (using effective category)
     if (selectedCategories.size > 0) {
-      result = result.filter(t => t.category_id && selectedCategories.has(t.category_id));
+      result = result.filter(t => {
+        const effectiveCat = getEffectiveCategory(t);
+        return effectiveCat && selectedCategories.has(effectiveCat.id);
+      });
     }
 
     return result;
-  }, [transactions, mainFilter, selectedCategories, searchTerm]);
+  }, [transactions, mainFilter, selectedCategories, searchTerm, allCategories]);
 
   async function handleCreateEvent(transactionId: string) {
     setCreatingEvent(transactionId);
