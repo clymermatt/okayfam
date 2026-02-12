@@ -387,7 +387,8 @@ export async function getMoneyStatus(year?: number, month?: number): Promise<Mon
   const budget = family?.monthly_budget ?? 0;
 
   // Separate expenses and income (exclude calendar events from budget calculations)
-  const expenses = events.filter(e => e.event_type === 'expense');
+  // Savings events are treated as expenses (money going out)
+  const expenses = events.filter(e => e.event_type === 'expense' || e.event_type === 'savings');
   const incomeEvents = events.filter(e => e.event_type === 'income');
 
   // Get spent events (completed expense events with actual_cost)
