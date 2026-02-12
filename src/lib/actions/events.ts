@@ -73,6 +73,7 @@ export async function createEvent(formData: FormData) {
   const recurrenceValue = formData.get('recurrence') as string;
   const eventTypeValue = formData.get('event_type') as string || 'expense';
   const eventTimeValue = formData.get('event_time') as string;
+  const savingsGoalId = formData.get('savings_goal_id') as string;
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string || undefined,
@@ -80,6 +81,7 @@ export async function createEvent(formData: FormData) {
     event_time: eventTimeValue?.trim() || undefined,
     estimated_cost: parseInt(formData.get('estimated_cost') as string) || 0,
     event_type: eventTypeValue as EventType,
+    savings_goal_id: savingsGoalId || null,
     participant_ids: formData.getAll('participant_ids') as string[],
     recurrence: recurrenceValue || null,
     recurrence_end_date: formData.get('recurrence_end_date') as string || undefined,
@@ -104,6 +106,7 @@ export async function createEvent(formData: FormData) {
       event_time: result.data.event_time || null,
       estimated_cost: result.data.estimated_cost,
       event_type: eventType,
+      savings_goal_id: result.data.savings_goal_id || null,
       created_by: profile.id,
       status: 'upcoming',
       recurrence: recurrence,
@@ -182,6 +185,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const recurrenceValue = formData.get('recurrence') as string;
   const eventTypeValue = formData.get('event_type') as string || 'expense';
   const eventTimeValue = formData.get('event_time') as string;
+  const savingsGoalId = formData.get('savings_goal_id') as string;
   const rawData = {
     title: formData.get('title') as string,
     description: formData.get('description') as string || undefined,
@@ -189,6 +193,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
     event_time: eventTimeValue?.trim() || undefined,
     estimated_cost: parseInt(formData.get('estimated_cost') as string) || 0,
     event_type: eventTypeValue as EventType,
+    savings_goal_id: savingsGoalId || null,
     participant_ids: formData.getAll('participant_ids') as string[],
     recurrence: recurrenceValue || null,
     recurrence_end_date: formData.get('recurrence_end_date') as string || undefined,
@@ -221,6 +226,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
     event_time: result.data.event_time || null,
     estimated_cost: result.data.estimated_cost,
     event_type: eventType,
+    savings_goal_id: result.data.savings_goal_id || null,
   };
 
   // Only update recurrence fields if this is not a child event
@@ -465,6 +471,13 @@ export async function completeEvent(formData: FormData) {
     return { error: result.error.errors[0].message };
   }
 
+  // Get the event to check if it's a savings event
+  const { data: event } = await supabase
+    .from('events')
+    .select('event_type, savings_goal_id')
+    .eq('id', result.data.event_id)
+    .single();
+
   const { error } = await supabase
     .from('events')
     .update({
@@ -475,6 +488,30 @@ export async function completeEvent(formData: FormData) {
 
   if (error) {
     return { error: error.message };
+  }
+
+  // If this is a savings event with a linked goal, update the goal's current_amount
+  if (event?.event_type === 'savings' && event?.savings_goal_id) {
+    const { data: goal } = await supabase
+      .from('savings_goals')
+      .select('current_amount, target_amount')
+      .eq('id', event.savings_goal_id)
+      .single();
+
+    if (goal) {
+      const newAmount = goal.current_amount + result.data.actual_cost;
+      const isCompleted = newAmount >= goal.target_amount;
+
+      await supabase
+        .from('savings_goals')
+        .update({
+          current_amount: newAmount,
+          is_completed: isCompleted,
+        })
+        .eq('id', event.savings_goal_id);
+
+      revalidatePath('/savings');
+    }
   }
 
   revalidatePath('/');

@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Target, Trash2, Plus, ChevronDown, ChevronUp, TrendingUp, TrendingDown, CheckCircle2 } from 'lucide-react';
+import Link from 'next/link';
+import { Target, Trash2, Plus, ChevronDown, ChevronUp, TrendingUp, TrendingDown, CheckCircle2, Calendar } from 'lucide-react';
 import { SavingsGoal } from '@/lib/supabase/types';
 import { formatMoney, formatDate, calculateMonthlyContribution, calculateSavingsStatus } from '@/lib/utils';
-import { contributeSavings, deleteSavingsGoal } from '@/lib/actions/savings';
+import { deleteSavingsGoal } from '@/lib/actions/savings';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 
 interface SavingsGoalCardProps {
@@ -17,26 +16,11 @@ interface SavingsGoalCardProps {
 
 export function SavingsGoalCard({ goal }: SavingsGoalCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [contributing, setContributing] = useState(false);
-  const [contributionAmount, setContributionAmount] = useState('');
-  const [pending, setPending] = useState(false);
-  const router = useRouter();
 
   const recommendedContribution = calculateMonthlyContribution(goal);
   const savingsStatus = calculateSavingsStatus(goal);
   const progress = Math.min(100, (goal.current_amount / goal.target_amount) * 100);
   const remaining = goal.target_amount - goal.current_amount;
-
-  async function handleContribute() {
-    if (!contributionAmount) return;
-    setPending(true);
-    const amount = Math.round(parseFloat(contributionAmount) * 100);
-    await contributeSavings(goal.id, amount);
-    setContributionAmount('');
-    setContributing(false);
-    router.refresh();
-    setPending(false);
-  }
 
   async function handleDelete() {
     if (confirm('Are you sure you want to delete this savings goal?')) {
@@ -137,99 +121,35 @@ export function SavingsGoalCard({ goal }: SavingsGoalCardProps) {
           {/* Expanded section */}
           {expanded && (
             <div className="pt-4 border-t space-y-4">
-              {/* Dynamic contribution explanation */}
+              {/* Explanation */}
               {savingsStatus.status !== 'completed' && (
                 <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
                   <p>
-                    <strong>Flexible savings:</strong> The recommended amount adjusts automatically based on your progress.
-                    Contribute more this month, and next month&apos;s recommendation decreases.
+                    <strong>Track savings with events:</strong> Create a savings event to schedule a transfer.
+                    When you mark the event complete, your progress updates automatically.
                   </p>
                 </div>
               )}
 
-              {/* Quick contribute */}
-              {savingsStatus.status !== 'completed' && (
-                <>
-                  {contributing ? (
-                    <div className="flex gap-2">
-                      <div className="flex items-center gap-2 flex-1">
-                        <span className="text-muted-foreground">$</span>
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0.00"
-                          value={contributionAmount}
-                          onChange={(e) => setContributionAmount(e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                      <Button onClick={handleContribute} disabled={pending || !contributionAmount}>
-                        {pending ? 'Adding...' : 'Add'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setContributing(false)}
-                        disabled={pending}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* Quick amount buttons */}
-                      <div className="flex gap-2 flex-wrap">
-                        <span className="text-sm text-muted-foreground self-center">Quick add:</span>
-                        {[50, 100, 200, recommendedContribution / 100].map((amount) => (
-                          <Button
-                            key={amount}
-                            variant="outline"
-                            size="sm"
-                            onClick={async () => {
-                              setPending(true);
-                              await contributeSavings(goal.id, Math.round(amount * 100));
-                              router.refresh();
-                              setPending(false);
-                            }}
-                            disabled={pending}
-                          >
-                            ${Math.round(amount)}
-                          </Button>
-                        ))}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() => setContributing(true)}
-                          className="flex-1"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Custom Amount
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={handleDelete}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-              {savingsStatus.status === 'completed' && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={handleDelete}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
+              {/* Actions */}
+              <div className="flex gap-2">
+                {savingsStatus.status !== 'completed' && (
+                  <Button asChild className="flex-1">
+                    <Link href={`/events/new?savings_goal=${goal.id}`}>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Schedule Transfer
+                    </Link>
                   </Button>
-                </div>
-              )}
+                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleDelete}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getEvent, getFamilyMembers } from '@/lib/queries';
+import { getEvent, getFamilyMembers, getSavingsGoals } from '@/lib/queries';
 import { EventForm } from '@/components/events/event-form';
 
 export default async function EditEventPage({
@@ -8,9 +8,10 @@ export default async function EditEventPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [event, familyMembers] = await Promise.all([
+  const [event, familyMembers, savingsGoals] = await Promise.all([
     getEvent(id),
     getFamilyMembers(),
+    getSavingsGoals(),
   ]);
 
   if (!event) {
@@ -23,6 +24,7 @@ export default async function EditEventPage({
       <EventForm
         event={event}
         familyMembers={familyMembers}
+        savingsGoals={savingsGoals}
         participantIds={event.participants.map((p: { id: string }) => p.id)}
       />
     </div>

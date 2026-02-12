@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { FamilyMember, Event, RecurrenceType, EventType } from '@/lib/supabase/types';
+import { FamilyMember, Event, RecurrenceType, EventType, SavingsGoal } from '@/lib/supabase/types';
 
 interface EventFormProps {
   familyMembers: FamilyMember[];
+  savingsGoals: SavingsGoal[];
   event?: Event;
   participantIds?: string[];
+  defaultSavingsGoalId?: string;
 }
 
 const RECURRENCE_OPTIONS: { value: RecurrenceType; label: string }[] = [
@@ -46,24 +48,31 @@ function generateTimeOptions(): { value: string; label: string }[] {
 
 const TIME_OPTIONS = generateTimeOptions();
 
-type CostType = 'none' | 'expense' | 'income';
+type CostType = 'none' | 'expense' | 'income' | 'savings';
 
 function getCostTypeFromEvent(event?: Event): CostType {
   if (!event) return 'none';
   if (event.event_type === 'calendar') return 'none';
   if (event.event_type === 'income') return 'income';
+  if (event.event_type === 'savings') return 'savings';
   return 'expense';
 }
 
-export function EventForm({ familyMembers, event, participantIds = [] }: EventFormProps) {
+export function EventForm({ familyMembers, savingsGoals, event, participantIds = [], defaultSavingsGoalId }: EventFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const [costType, setCostType] = useState<CostType>(getCostTypeFromEvent(event));
+  // If defaultSavingsGoalId is provided, pre-select savings type
+  const [costType, setCostType] = useState<CostType>(
+    defaultSavingsGoalId ? 'savings' : getCostTypeFromEvent(event)
+  );
   const [costDisplay, setCostDisplay] = useState(
     event?.estimated_cost ? (event.estimated_cost / 100).toFixed(2) : ''
   );
   const [recurrence, setRecurrence] = useState<RecurrenceType>(event?.recurrence || null);
   const [editScope, setEditScope] = useState<'single' | 'series'>('single');
+  const [selectedSavingsGoalId, setSelectedSavingsGoalId] = useState<string>(
+    event?.savings_goal_id || defaultSavingsGoalId || ''
+  );
 
   const isEditing = !!event;
   const isChildEvent = !!event?.recurrence_parent_id;
@@ -71,7 +80,7 @@ export function EventForm({ familyMembers, event, participantIds = [] }: EventFo
   const isRecurring = isChildEvent || isParentEvent;
 
   // Determine event_type from costType
-  const eventType: EventType = costType === 'none' ? 'calendar' : costType;
+  const eventType: EventType = costType === 'none' ? 'calendar' : costType === 'savings' ? 'savings' : costType;
 
   async function handleSubmit(formData: FormData) {
     setPending(true);
@@ -81,6 +90,11 @@ export function EventForm({ familyMembers, event, participantIds = [] }: EventFo
     const costInCents = costType === 'none' ? 0 : parseMoney(formData.get('estimated_cost_display') as string);
     formData.set('estimated_cost', costInCents.toString());
     formData.set('event_type', eventType);
+
+    // Only include savings_goal_id for savings events
+    if (costType !== 'savings') {
+      formData.delete('savings_goal_id');
+    }
 
     let result;
     if (isEditing) {
@@ -203,14 +217,27 @@ export function EventForm({ familyMembers, event, participantIds = [] }: EventFo
               >
                 Income
               </button>
+              {savingsGoals.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setCostType('savings')}
+                  className={`px-3 py-2 rounded-md border transition-colors text-sm ${
+                    costType === 'savings'
+                      ? 'bg-blue-50 border-blue-200 text-blue-700'
+                      : 'bg-background border-input hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  Savings
+                </button>
+              )}
             </div>
 
             {costType !== 'none' && (
               <div className="flex items-center gap-2 mt-2">
                 <span className={`text-lg font-medium ${
-                  costType === 'income' ? 'text-green-600' : 'text-red-600'
+                  costType === 'income' ? 'text-green-600' : costType === 'savings' ? 'text-blue-600' : 'text-red-600'
                 }`}>
-                  {costType === 'income' ? '+$' : '-$'}
+                  {costType === 'income' ? '+$' : costType === 'savings' ? '$' : '-$'}
                 </span>
                 <Input
                   id="estimated_cost_display"
@@ -222,6 +249,27 @@ export function EventForm({ familyMembers, event, participantIds = [] }: EventFo
                   value={costDisplay}
                   onChange={(e) => setCostDisplay(e.target.value)}
                 />
+              </div>
+            )}
+
+            {costType === 'savings' && savingsGoals.length > 0 && (
+              <div className="mt-3">
+                <Label htmlFor="savings_goal_id">Link to Savings Goal</Label>
+                <select
+                  id="savings_goal_id"
+                  name="savings_goal_id"
+                  value={selectedSavingsGoalId}
+                  onChange={(e) => setSelectedSavingsGoalId(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 mt-1"
+                  required
+                >
+                  <option value="">Select a savings goal...</option>
+                  {savingsGoals.filter(g => !g.is_completed).map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>

@@ -9,10 +9,9 @@ import { Event } from '@/lib/supabase/types';
 
 interface MoneyStatusProps {
   status: MoneyStatusWithEvents;
-  monthlySavings?: number;
 }
 
-export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
+export function MoneyStatus({ status }: MoneyStatusProps) {
   const {
     budget,
     spent,
@@ -38,15 +37,14 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
   const totalIncome = incomeReceived + incomeExpected;
   const totalAvailable = budget + totalIncome;
 
-  // Calculate unallocated (subtract savings from available funds)
-  const unallocated = Math.max(0, totalAvailable - spent - spokenFor - monthlySavings);
+  // Calculate unallocated
+  const unallocated = Math.max(0, totalAvailable - spent - spokenFor);
 
   // Calculate percentages for the bar based on total available
   const total = totalAvailable || 1; // Avoid division by zero
   const spentPercent = Math.min((spent / total) * 100, 100);
   const spokenForPercent = Math.min((spokenFor / total) * 100, 100 - spentPercent);
-  const savingsPercent = Math.min((monthlySavings / total) * 100, 100 - spentPercent - spokenForPercent);
-  const unallocatedPercent = Math.max(0, 100 - spentPercent - spokenForPercent - savingsPercent);
+  const unallocatedPercent = Math.max(0, 100 - spentPercent - spokenForPercent);
 
   function toggleSection(section: 'spent' | 'spokenFor') {
     setExpandedSection(expandedSection === section ? null : section);
@@ -84,12 +82,6 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
               style={{ width: `${spokenForPercent}%` }}
             />
           )}
-          {savingsPercent > 0 && (
-            <div
-              className="bg-blue-500 h-full transition-all"
-              style={{ width: `${savingsPercent}%` }}
-            />
-          )}
           {unallocatedPercent > 0 && (
             <div
               className="bg-green-500 h-full transition-all"
@@ -99,7 +91,7 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
         </div>
 
         {/* Legend - clickable for spent and spoken-for */}
-        <div className={`grid gap-2 sm:gap-4 text-center ${monthlySavings > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
           {/* Spent - clickable */}
           <button
             onClick={() => (spentEvents.length > 0 || hasSpentCategories) && toggleSection('spent')}
@@ -139,16 +131,6 @@ export function MoneyStatus({ status, monthlySavings = 0 }: MoneyStatusProps) {
             </div>
             <p className="text-xs sm:text-sm font-semibold">{formatMoney(spokenFor)}</p>
           </button>
-
-          {monthlySavings > 0 && (
-            <div>
-              <div className="flex items-center justify-center gap-1 sm:gap-2 mb-1">
-                <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-blue-500 flex-shrink-0" />
-                <span className="text-xs sm:text-sm text-muted-foreground">Savings</span>
-              </div>
-              <p className="text-xs sm:text-sm font-semibold">{formatMoney(monthlySavings)}</p>
-            </div>
-          )}
 
           {/* Unallocated - not clickable */}
           <div>

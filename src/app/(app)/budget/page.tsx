@@ -3,7 +3,7 @@ import { Settings, Landmark } from 'lucide-react';
 
 // Force dynamic rendering to ensure fresh data
 export const dynamic = 'force-dynamic';
-import { getMoneyStatus, getFamily, getTotalMonthlySavings, getCategoryBudgetStatus } from '@/lib/queries';
+import { getMoneyStatus, getFamily, getCategoryBudgetStatus } from '@/lib/queries';
 import { MoneyStatus } from '@/components/budget/money-status';
 import { MonthNavigator } from '@/components/budget/month-navigator';
 import { CategoryBudgets } from '@/components/budget/category-budgets';
@@ -22,10 +22,9 @@ export default async function BudgetPage({
   const year = params.year ? parseInt(params.year) : now.getFullYear();
   const month = params.month ? parseInt(params.month) : now.getMonth() + 1;
 
-  const [moneyStatus, family, monthlySavings, categoryBudgets] = await Promise.all([
+  const [moneyStatus, family, categoryBudgets] = await Promise.all([
     getMoneyStatus(year, month),
     getFamily(),
-    getTotalMonthlySavings(),
     getCategoryBudgetStatus(year, month),
   ]);
 
@@ -50,7 +49,7 @@ export default async function BudgetPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <MoneyStatus status={moneyStatus} monthlySavings={monthlySavings} />
+          <MoneyStatus status={moneyStatus} />
         </CardContent>
       </Card>
 

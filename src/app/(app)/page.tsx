@@ -73,7 +73,7 @@ export default async function DashboardPage({
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <MoneyStatus status={moneyStatus} monthlySavings={monthlySavings} />
+          <MoneyStatus status={moneyStatus} />
         </CardContent>
       </Card>
 

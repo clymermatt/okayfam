@@ -25,7 +25,8 @@ export const eventSchema = z.object({
     })
     .optional(),
   estimated_cost: z.number().min(0, 'Amount cannot be negative'),
-  event_type: z.enum(['expense', 'income', 'calendar']).default('expense'),
+  event_type: z.enum(['expense', 'income', 'calendar', 'savings']).default('expense'),
+  savings_goal_id: z.string().uuid().optional().nullable(),
   participant_ids: z.array(z.string()).optional(),
   recurrence: z.enum(['weekly', 'biweekly', 'monthly', 'yearly']).nullable().optional(),
   recurrence_end_date: z.string().optional(),

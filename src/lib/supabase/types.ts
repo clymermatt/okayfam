@@ -1,6 +1,6 @@
 export type EventStatus = 'upcoming' | 'completed' | 'cancelled';
 export type RecurrenceType = 'weekly' | 'biweekly' | 'monthly' | 'yearly' | null;
-export type EventType = 'expense' | 'income' | 'calendar';
+export type EventType = 'expense' | 'income' | 'calendar' | 'savings';
 
 export interface Family {
   id: string;
@@ -41,6 +41,7 @@ export interface Event {
   recurrence: RecurrenceType;
   recurrence_end_date: string | null;
   recurrence_parent_id: string | null;
+  savings_goal_id: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
