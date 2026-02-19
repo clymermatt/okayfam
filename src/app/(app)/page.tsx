@@ -1,11 +1,10 @@
 import Link from 'next/link';
-import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, ShoppingCart, Landmark, Tag } from 'lucide-react';
+import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, ShoppingCart, Tag } from 'lucide-react';
 
 // Force dynamic rendering to ensure fresh data
 export const dynamic = 'force-dynamic';
-import { getFilteredEvents, getMoneyStatus, getFamily, getCategoryBudgetStatus, DateFilter } from '@/lib/queries';
+import { getFilteredEvents, getFamily, getCategoryBudgetStatus, DateFilter } from '@/lib/queries';
 import { formatDate, formatMoney } from '@/lib/utils';
-import { MoneyStatus } from '@/components/budget/money-status';
 import { EventFilters } from '@/components/dashboard/event-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,14 +23,13 @@ export default async function DashboardPage({
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [events, moneyStatus, family, categoryBudgets] = await Promise.all([
+  const [events, family, categoryBudgets] = await Promise.all([
     getFilteredEvents(filter),
-    getMoneyStatus(),
     getFamily(),
     getCategoryBudgetStatus(year, month),
   ]);
 
-  const needsSetup = !family?.monthly_budget && moneyStatus.incomeExpected === 0 && moneyStatus.incomeReceived === 0;
+  const needsSetup = !family?.monthly_budget;
 
   const hasOverage = categoryBudgets.some(cat => cat.spent > cat.budget);
 
@@ -55,25 +53,7 @@ export default async function DashboardPage({
       {/* Page header */}
       <h1 className="text-2xl font-bold">{currentMonthName}</h1>
 
-      {/* 1. Total Available (Money Status) */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Landmark className="h-5 w-5 text-muted-foreground" />
-              Total Available
-            </CardTitle>
-            <Link href="/budget" className="text-xs text-muted-foreground hover:text-foreground">
-              View details
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <MoneyStatus status={moneyStatus} />
-        </CardContent>
-      </Card>
-
-      {/* 2. Variable Spending */}
+      {/* 1. Variable Spending */}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
@@ -135,7 +115,7 @@ export default async function DashboardPage({
         </CardContent>
       </Card>
 
-      {/* 3. Upcoming Events */}
+      {/* 2. Upcoming Events */}
       <Card>
         <CardHeader className="pb-3 space-y-3">
           <div className="flex flex-row items-center justify-between">
