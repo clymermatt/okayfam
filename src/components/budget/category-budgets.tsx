@@ -67,9 +67,9 @@ export function CategoryBudgets({ categories }: CategoryBudgetsProps) {
               <div className="flex justify-between items-center">
                 <div>
                   <span className="font-medium">{item.category.name}</span>
-                  <span className="text-sm text-muted-foreground ml-2">
-                    ({item.transactionCount} {item.transactionCount === 1 ? 'transaction' : 'transactions'})
-                  </span>
+                  <div className="text-xs text-muted-foreground">
+                    {item.transactionCount} {item.transactionCount === 1 ? 'transaction' : 'transactions'}
+                  </div>
                 </div>
                 <div className="text-right">
                   <span className={`font-semibold ${isOverBudget ? 'text-red-600' : ''}`}>
