@@ -52,9 +52,6 @@ export function CategoryBudgets({ categories }: CategoryBudgetsProps) {
             <p className="text-red-700 font-medium">
               {formatMoney(totalOverage)} over budget
             </p>
-            <p className="text-red-600 text-xs mt-1">
-              This amount is automatically pulled from Unallocated funds
-            </p>
           </div>
         )}
         {categories.map((item) => {
@@ -96,14 +93,9 @@ export function CategoryBudgets({ categories }: CategoryBudgetsProps) {
               {/* Remaining */}
               <div className="text-sm text-right">
                 {isOverBudget ? (
-                  <div>
-                    <span className="text-red-600 font-medium">
-                      {formatMoney(Math.abs(item.remaining))} over budget
-                    </span>
-                    <p className="text-xs text-muted-foreground">
-                      Pulled from Unallocated
-                    </p>
-                  </div>
+                  <span className="text-red-600 font-medium">
+                    {formatMoney(Math.abs(item.remaining))} over budget
+                  </span>
                 ) : (
                   <span className="text-muted-foreground">
                     {formatMoney(item.remaining)} remaining
