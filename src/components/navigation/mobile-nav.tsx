@@ -18,7 +18,7 @@ export function MobileNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background border-t safe-area-bottom">
-      <div className="flex justify-around py-2">
+      <div className="flex justify-around pt-2 pb-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.href === '/'
