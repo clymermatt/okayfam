@@ -47,13 +47,6 @@ export function CategoryBudgets({ categories }: CategoryBudgetsProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {totalOverage > 0 && (
-          <div className="p-3 text-sm bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-700 font-medium">
-              {formatMoney(totalOverage)} over budget
-            </p>
-          </div>
-        )}
         {categories.map((item) => {
           const percentUsed = item.budget > 0 ? (item.spent / item.budget) * 100 : 0;
           const isOverBudget = item.spent > item.budget;
@@ -105,6 +98,11 @@ export function CategoryBudgets({ categories }: CategoryBudgetsProps) {
             </div>
           );
         })}
+        {totalOverage > 0 && (
+          <div className="p-3 text-xs bg-red-50 border border-red-200 rounded-md text-red-700">
+            {formatMoney(totalOverage)} over budget in categories. You may need to reallocate funds to cover the overage.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
