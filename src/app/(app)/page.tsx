@@ -3,7 +3,7 @@ import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, ShoppingCart, Tag } f
 
 // Force dynamic rendering to ensure fresh data
 export const dynamic = 'force-dynamic';
-import { getFilteredEvents, getFamily, getCategoryBudgetStatus, DateFilter } from '@/lib/queries';
+import { getFilteredEvents, getCategoryBudgetStatus, DateFilter } from '@/lib/queries';
 import { formatDate, formatMoney } from '@/lib/utils';
 import { EventFilters } from '@/components/dashboard/event-filters';
 import { Button } from '@/components/ui/button';
@@ -23,33 +23,15 @@ export default async function DashboardPage({
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const [events, family, categoryBudgets] = await Promise.all([
+  const [events, categoryBudgets] = await Promise.all([
     getFilteredEvents(filter),
-    getFamily(),
     getCategoryBudgetStatus(year, month),
   ]);
-
-  const needsSetup = !family?.monthly_budget;
 
   const hasOverage = categoryBudgets.some(cat => cat.spent > cat.budget);
 
   return (
     <div className="space-y-6 pb-20 md:pb-0">
-      {/* Welcome / Setup prompt */}
-      {needsSetup && (
-        <Card className="border-primary bg-primary/5">
-          <CardContent className="pt-6">
-            <h2 className="font-semibold mb-2">Welcome to OKAYfam!</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              Set your monthly budget to start tracking your family&apos;s expenses.
-            </p>
-            <Button asChild size="sm">
-              <Link href="/settings">Set up budget</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Page header */}
       <h1 className="text-2xl font-bold">{currentMonthName}</h1>
 
