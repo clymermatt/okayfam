@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, ShoppingCart, Tag } from 'lucide-react';
+import { Plus, Calendar, Repeat, TrendingUp, TrendingDown, Tag } from 'lucide-react';
 
 // Force dynamic rendering to ensure fresh data
 export const dynamic = 'force-dynamic';
 import { getFilteredEvents, getCategoryBudgetStatus, DateFilter } from '@/lib/queries';
 import { formatDate, formatMoney } from '@/lib/utils';
+import { CategoryBudgets } from '@/components/budget/category-budgets';
 import { EventFilters } from '@/components/dashboard/event-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,74 +29,13 @@ export default async function DashboardPage({
     getCategoryBudgetStatus(year, month),
   ]);
 
-  const hasOverage = categoryBudgets.some(cat => cat.spent > cat.budget);
-
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       {/* Page header */}
       <h1 className="text-2xl font-bold">{currentMonthName}</h1>
 
       {/* 1. Variable Spending */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-muted-foreground" />
-              Variable Spending
-            </CardTitle>
-            <Link href="/settings#categories" className="text-xs text-muted-foreground hover:text-foreground">
-              Manage categories
-            </Link>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {categoryBudgets.length > 0 ? (
-            <div className="space-y-3">
-              {categoryBudgets.map((cat) => {
-                const percentage = cat.budget > 0 ? Math.min(100, (cat.spent / cat.budget) * 100) : 0;
-                const isOverBudget = cat.spent > cat.budget;
-                return (
-                  <div key={cat.category.id} className="space-y-1">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-medium">{cat.category.name}</span>
-                      <span className={`text-xs ${isOverBudget ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
-                        {formatMoney(cat.spent)} / {formatMoney(cat.budget)}
-                        {isOverBudget && ' (over)'}
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full bg-muted overflow-hidden">
-                      <div
-                        className={`h-full transition-all ${isOverBudget ? 'bg-red-500' : 'bg-primary'}`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground text-right">
-                      {Math.round(percentage)}% used
-                    </p>
-                  </div>
-                );
-              })}
-              {hasOverage && (
-                <p className="text-xs text-red-600 pt-2 border-t">
-                  Overage amounts have been deducted from Unallocated funds.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-sm text-muted-foreground mb-2">
-                Track spending categories like groceries, gas, or dining out.
-              </p>
-              <Link
-                href="/settings#categories"
-                className="text-sm text-primary hover:underline"
-              >
-                + Add your first category
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <CategoryBudgets categories={categoryBudgets} />
 
       {/* 2. Upcoming Events */}
       <Card>
